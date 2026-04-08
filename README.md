@@ -35,12 +35,18 @@ yolo task.data.source=0 # source could be a single file, video, image folder, we
 
 ## Installation
 
-To get started using YOLOv9's developer mode, we recommand you clone this repository and install the required dependencies:
+To get started using YOLOv9's developer mode, clone this repository and run:
 
 ```shell
 git clone git@github.com:WongKinYiu/YOLO.git
 cd YOLO
-pip install -r requirements.txt
+make setup
+```
+
+This will create a `.venv` virtual environment (if one doesn't already exist), install all dependencies, and set up pre-commit hooks. You can override the defaults with:
+
+```shell
+make setup VENV=myenv PYTHON=python3.11
 ```
 
 ## Features
