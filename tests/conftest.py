@@ -3,8 +3,11 @@ from pathlib import Path
 
 import pytest
 import torch
+import torch.nn as nn
+import torch.nn.functional as F
 from hydra import compose, initialize
-from lightning import Trainer
+from lightning import LightningModule, Trainer
+from torch.utils.data import Dataset
 
 project_root = Path(__file__).resolve().parent.parent
 sys.path.append(str(project_root))
@@ -73,7 +76,7 @@ def solver(train_cfg: Config) -> Trainer:
     trainer = Trainer(
         accelerator="auto",
         max_epochs=getattr(train_cfg.task, "epoch", None),
-        precision="16-mixed",
+        precision="32-true",
         callbacks=callbacks,
         logger=loggers,
         log_every_n_steps=1,
@@ -124,3 +127,69 @@ def file_stream_data_loader_v7(inference_v7_cfg: Config):
 def directory_stream_data_loader(inference_cfg: Config):
     inference_cfg.task.data.source = "tests/data/images/train"
     return StreamDataLoader(inference_cfg.task.data)
+
+
+# ── EMA test helpers ──────────────────────────────────────────────────────────
+
+
+class TinyDataset(Dataset):
+    """Minimal dataset returning (features, label) pairs for unit tests.
+
+    When image_size is None the data is a 1-D feature vector of length
+    feature_dim.  When image_size is a (H, W) tuple the data is a 3-channel
+    image tensor so tests can exercise image-shaped inputs as well.
+    """
+
+    def __init__(self, num_samples: int = 8, image_size=None, feature_dim: int = 4, out_dim: int = 2):
+        if image_size is not None:
+            self.data = torch.randn(num_samples, 3, *image_size)
+        else:
+            self.data = torch.randn(num_samples, feature_dim)
+        self.labels = torch.randint(0, out_dim, (num_samples,))
+
+    def __len__(self) -> int:
+        return len(self.data)
+
+    def __getitem__(self, idx):
+        return self.data[idx], self.labels[idx]
+
+
+class DummyModule(LightningModule):
+    """Single-layer linear LightningModule used for testing callbacks."""
+
+    def __init__(self, train_loader, input_size: int = 4, output_size: int = 2):
+        super().__init__()
+        self.model = nn.Linear(input_size, output_size)
+        self._train_loader = train_loader
+
+    def forward(self, x):
+        return self.model(x)
+
+    def training_step(self, batch, batch_idx):
+        x, y = batch
+        pred = self(x)
+        target = F.one_hot(y, num_classes=pred.shape[-1]).float()
+        return F.mse_loss(pred, target)
+
+    def configure_optimizers(self):
+        return torch.optim.Adam(self.parameters(), lr=1e-3)
+
+    def train_dataloader(self):
+        return self._train_loader
+
+
+class DummyModuleWithVal(DummyModule):
+    """DummyModule that also exposes a validation dataloader."""
+
+    def __init__(self, train_loader, val_loader, input_size: int = 4, output_size: int = 2):
+        super().__init__(train_loader, input_size=input_size, output_size=output_size)
+        self._val_loader = val_loader
+
+    def validation_step(self, batch, batch_idx):
+        x, y = batch
+        pred = self(x)
+        target = F.one_hot(y, num_classes=pred.shape[-1]).float()
+        return F.mse_loss(pred, target)
+
+    def val_dataloader(self):
+        return self._val_loader

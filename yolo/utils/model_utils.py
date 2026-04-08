@@ -1,5 +1,4 @@
 import os
-from copy import deepcopy
 from math import exp
 from pathlib import Path
 from typing import List, Optional, Type, Union
@@ -40,40 +39,128 @@ def lerp(start: float, end: float, step: Union[int, float], total: int = 1):
     Returns:
         float: The interpolated value.
     """
+    if total <= 0:
+        return end
     return start + (end - start) * step / total
 
 
 class EMA(Callback):
-    def __init__(self, decay: float = 0.9999, tau: float = 2000):
+    """Exponential Moving Average of model weights as a Lightning Callback.
+
+    Keeps a shadow copy of model parameters smoothed over training steps:
+        beta = decay * (1 - exp(-step / tau))
+        shadow = beta * shadow + (1 - beta) * model
+
+    The tau warmup ramps beta up from ~0 at step 0, so early noisy updates
+    don't dominate the shadow. Validation always runs on shadow weights;
+    training weights are swapped back immediately after.
+    """
+
+    _CHECKPOINT_KEY = "ema_shadow"
+
+    def __init__(self, decay: float = 0.9999, tau: float = 2000.0) -> None:
         super().__init__()
         logger.info(":chart_with_upwards_trend: Enable Model EMA")
         self.decay = decay
         self.tau = tau
-        self.step = 0
-        self.batch_step_counter = 0
-        self.ema_state_dict = None
+        self.step: int = 0
+        self.batch_count: int = 0
+        self.shadow: Optional[dict] = None
+        self._training_weights: Optional[dict] = None
 
-    def setup(self, trainer, pl_module, stage):
-        pl_module.ema = deepcopy(pl_module.model)
-        self.tau /= trainer.world_size
-        for param in pl_module.ema.parameters():
-            param.requires_grad = False
+    def setup(self, trainer: "Trainer", pl_module: "LightningModule", stage: str) -> None:
+        """Initialise shadow from the model before training begins.
 
-    def on_validation_start(self, trainer: "Trainer", pl_module: "LightningModule"):
-        self.batch_step_counter = 0
-        if self.ema_state_dict is None:
-            self.ema_state_dict = deepcopy(pl_module.model.state_dict())
-        pl_module.ema.load_state_dict(self.ema_state_dict)
+        Running setup() here (rather than lazily inside update) means lerping
+        starts from step 1 instead of step 2, matching the original behaviour.
+        The guard keeps it idempotent if setup is called multiple times.
+        """
+        if self.shadow is None:
+            self.shadow = {k: v.detach().clone() for k, v in pl_module.model.state_dict().items()}
+
+    def _beta(self) -> float:
+        """Effective smoothing coefficient at the current step."""
+        return self.decay * (1 - exp(-self.step / self.tau))
+
+    @no_grad()
+    def update(self, pl_module: "LightningModule") -> None:
+        """Blend model parameters into shadow; copy buffers directly.
+
+        Parameters (learned weights) are blended via EMA.
+        Buffers (e.g. BatchNorm running_mean / running_var) track data
+        statistics — averaging them across two different distributions
+        produces a value that represents neither, so they are copied as-is.
+        """
+        current = pl_module.model.state_dict()
+        if self.shadow is None:
+            # Safety fallback: setup() should have run, but guard anyway.
+            self.shadow = {k: v.detach().clone() for k, v in current.items()}
+            return
+
+        beta = self._beta()
+
+        # Parameters: fused lerp — shadow = beta*shadow + (1-beta)*model
+        param_keys = [k for k, _ in pl_module.model.named_parameters()]
+        shadow_params = [self.shadow[k] for k in param_keys]
+        model_params = [current[k].detach().to(self.shadow[k].device) for k in param_keys]
+        if hasattr(torch, "_foreach_lerp_"):
+            torch._foreach_lerp_(shadow_params, model_params, 1.0 - beta)
+        elif hasattr(torch, "_foreach_mul_"):
+            torch._foreach_mul_(shadow_params, beta)
+            torch._foreach_add_(shadow_params, model_params, alpha=1.0 - beta)
+        else:
+            for s, m in zip(shadow_params, model_params):
+                s.mul_(beta).add_(m, alpha=1.0 - beta)
+
+        # Buffers: copy directly
+        for key, buf in pl_module.model.named_buffers():
+            self.shadow[key].copy_(buf.detach().to(self.shadow[key].device))
+
+    @no_grad()
+    def apply_shadow(self, pl_module: "LightningModule") -> None:
+        """Snapshot training weights then load shadow weights into the model."""
+        if self.shadow is None:
+            return
+        self._training_weights = {k: v.detach().clone() for k, v in pl_module.model.state_dict().items()}
+        pl_module.model.load_state_dict(self.shadow, strict=True)
+
+    @no_grad()
+    def restore(self, pl_module: "LightningModule") -> None:
+        """Reload the training-weight snapshot, discarding the shadow swap."""
+        if self._training_weights is None:
+            return
+        pl_module.model.load_state_dict(self._training_weights, strict=True)
+        self._training_weights = None
 
     @no_grad()
     def on_train_batch_end(self, trainer: "Trainer", pl_module: "LightningModule", *args, **kwargs) -> None:
-        self.batch_step_counter += 1
-        if self.batch_step_counter % trainer.accumulate_grad_batches:
+        self.batch_count += 1
+        if self.batch_count % trainer.accumulate_grad_batches != 0:
             return
         self.step += 1
-        decay_factor = self.decay * (1 - exp(-self.step / self.tau))
-        for key, param in pl_module.model.state_dict().items():
-            self.ema_state_dict[key] = lerp(param.detach(), self.ema_state_dict[key], decay_factor)
+        self.update(pl_module)
+
+    def on_validation_start(self, trainer: "Trainer", pl_module: "LightningModule") -> None:
+        self.batch_count = 0
+        self.apply_shadow(pl_module)
+
+    def on_validation_end(self, trainer: "Trainer", pl_module: "LightningModule") -> None:
+        self.restore(pl_module)
+
+    def on_save_checkpoint(self, trainer: "Trainer", pl_module: "LightningModule", checkpoint: dict) -> None:
+        if self.shadow is None:
+            return
+        checkpoint[self._CHECKPOINT_KEY] = {k: v.detach().cpu() for k, v in self.shadow.items()}
+        checkpoint["ema_step"] = self.step
+        checkpoint["ema_batch_count"] = self.batch_count
+
+    def on_load_checkpoint(self, trainer: "Trainer", pl_module: "LightningModule", checkpoint: dict) -> None:
+        self.step = checkpoint.get("ema_step", 0)
+        self.batch_count = checkpoint.get("ema_batch_count", 0)
+        if self._CHECKPOINT_KEY not in checkpoint:
+            return
+        target_device = next(pl_module.model.parameters()).device
+        self.shadow = {k: v.detach().clone().to(target_device) for k, v in checkpoint[self._CHECKPOINT_KEY].items()}
 
 
 class GradientAccumulation(Callback):
