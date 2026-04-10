@@ -10,7 +10,8 @@ from yolo.tools.data_loader import create_dataloader
 from yolo.tools.drawer import draw_bboxes
 from yolo.tools.loss_functions import create_loss_function
 from yolo.utils.bounding_box_utils import create_converter, to_metrics_format
-from yolo.utils.model_utils import PostProcess, create_optimizer, create_scheduler
+from yolo.utils.model_utils import PostProcess
+from yolo.utils.optim_utils import create_optimizer, create_scheduler
 
 
 class BaseModel(LightningModule):
@@ -56,11 +57,12 @@ class ValidateModel(BaseModel):
     def on_validation_epoch_end(self):
         epoch_metrics = self.metric.compute()
         del epoch_metrics["classes"]
-        self.log_dict(epoch_metrics, prog_bar=True, sync_dist=True, rank_zero_only=True)
+        self.log_dict(epoch_metrics, prog_bar=True, sync_dist=True, rank_zero_only=True, logger=True)
         self.log_dict(
             {"PyCOCO/AP @ .5:.95": epoch_metrics["map"], "PyCOCO/AP @ .5": epoch_metrics["map_50"]},
             sync_dist=True,
             rank_zero_only=True,
+            logger=True,
         )
         self.metric.reset()
 
@@ -79,13 +81,9 @@ class TrainModel(ValidateModel):
         return self.train_loader
 
     def on_train_epoch_start(self):
-        self.trainer.optimizers[0].next_epoch(
-            ceil(len(self.train_loader) / self.trainer.world_size), self.current_epoch
-        )
         self.vec2box.update(self.cfg.image_size)
 
     def training_step(self, batch, batch_idx):
-        lr_dict = self.trainer.optimizers[0].next_batch()
         batch_size, images, targets, *_ = batch
         predicts = self(images)
         aux_predicts = self.vec2box(predicts["AUX"])
@@ -93,18 +91,40 @@ class TrainModel(ValidateModel):
         loss, loss_item = self.loss_fn(aux_predicts, main_predicts, targets)
         self.log_dict(
             loss_item,
+            logger=True,
             prog_bar=True,
             on_epoch=True,
             batch_size=batch_size,
             rank_zero_only=True,
         )
-        self.log_dict(lr_dict, prog_bar=False, logger=True, on_epoch=False, rank_zero_only=True)
-        return loss * batch_size
+        return loss
 
     def configure_optimizers(self):
         optimizer = create_optimizer(self.model, self.cfg.task.optimizer)
-        scheduler = create_scheduler(optimizer, self.cfg.task.scheduler)
-        return [optimizer], [scheduler]
+
+        batch_size = self.cfg.task.data.batch_size
+        world_size = getattr(self.trainer, "world_size", 1) if self.trainer else 1
+        equivalent_batch_size = getattr(self.cfg.task.data, "equivalent_batch_size", None)
+        if equivalent_batch_size is not None:
+            max_accum = max(1, round(equivalent_batch_size / (batch_size * world_size)))
+        else:
+            max_accum = 1
+
+        # Use dataset length — invariant to loader sharding (e.g. Ray Train or Distributed Sampler
+        # wraps the loader per rank, so len(train_loader) would be the per-rank count).
+        if hasattr(self.train_loader, "dataset"):
+            n_samples = len(self.train_loader.dataset)
+            global_batch = batch_size * world_size * max_accum
+            drop_last = getattr(self.cfg.task.data, "drop_last", False)
+            if drop_last:
+                steps_per_epoch = max(1, n_samples // global_batch)
+            else:
+                steps_per_epoch = max(1, ceil(n_samples / global_batch))
+        else:
+            steps_per_epoch = max(1, ceil(len(self.train_loader) / max_accum))
+
+        scheduler = create_scheduler(optimizer, self.cfg.task.scheduler, steps_per_epoch, self.cfg.task.epoch)
+        return {"optimizer": optimizer, "lr_scheduler": {"scheduler": scheduler, "interval": "step"}}
 
 
 class InferenceModel(BaseModel):

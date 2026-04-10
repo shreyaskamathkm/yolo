@@ -70,6 +70,8 @@ Config
         List~int~ image_size
         Dict~int~ data_augment
         Optional~Union~str~~ source
+        Optional~int~ equivalent_batch_size
+        bool drop_last
     }
 
     DownloadDetail --> DownloadOptions
@@ -100,9 +102,15 @@ Config
         MatcherConfig matcher
     }
 
+    class WarmupConfig {
+        float epochs
+        float start_momentum
+        float end_momentum
+    }
+
     class SchedulerConfig {
         str type
-        Dict~str~ warmup
+        WarmupConfig warmup
         Dict~str~ args
     }
 
@@ -145,6 +153,7 @@ Config
     OptimizerConfig --> TrainConfig
     MatcherConfig --> LossConfig
     LossConfig --> TrainConfig
+    WarmupConfig --> SchedulerConfig
     SchedulerConfig --> TrainConfig
     EMAConfig --> TrainConfig
     NMSConfig --> InferenceConfig

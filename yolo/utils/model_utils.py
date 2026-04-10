@@ -1,7 +1,7 @@
 import os
 from math import exp
 from pathlib import Path
-from typing import List, Optional, Type, Union
+from typing import List, Optional, Union
 
 import torch
 import torch.distributed as dist
@@ -10,38 +10,16 @@ from lightning.pytorch.callbacks import Callback
 from omegaconf import ListConfig
 from torch import Tensor, no_grad
 from torch.optim import Optimizer
-from torch.optim.lr_scheduler import LambdaLR, SequentialLR, _LRScheduler
 
 from yolo.config.config import (
     IDX_TO_ID,
     DataConfig,
     NMSConfig,
-    OptimizerConfig,
     SchedulerConfig,
 )
-from yolo.model.yolo import YOLO
 from yolo.utils.bounding_box_utils import Anc2Box, Vec2Box, bbox_nms, transform_bbox
 from yolo.utils.logger import logger
-
-
-def lerp(start: float, end: float, step: Union[int, float], total: int = 1):
-    """
-    Linearly interpolates between start and end values.
-
-    start * (1 - step) + end * step
-
-    Parameters:
-        start (float): The starting value.
-        end (float): The ending value.
-        step (int): The current step in the interpolation process.
-        total (int): The total number of steps.
-
-    Returns:
-        float: The interpolated value.
-    """
-    if total <= 0:
-        return end
-    return start + (end - start) * step / total
+from yolo.utils.optim_utils import lerp
 
 
 class EMA(Callback):
@@ -169,95 +147,33 @@ class GradientAccumulation(Callback):
         self.equivalent_batch_size = data_cfg.equivalent_batch_size
         self.actual_batch_size = data_cfg.batch_size
         self.warmup_epochs = getattr(scheduler_cfg.warmup, "epochs", 0)
-        self.current_batch = 0
         self.max_accumulation = 1
         self.warmup_batches = 0
+        self.steps_per_epoch = 1
         logger.info(":arrows_counterclockwise: Enable Gradient Accumulation")
 
     def setup(self, trainer: "Trainer", pl_module: "LightningModule", stage: str) -> None:
-        effective_batch_size = self.actual_batch_size * trainer.world_size
-        self.max_accumulation = max(1, round(self.equivalent_batch_size / effective_batch_size))
-        batches_per_epoch = int(len(pl_module.train_loader) / trainer.world_size)
-        self.warmup_batches = int(self.warmup_epochs * batches_per_epoch)
+        scaled_batch = self.actual_batch_size * trainer.world_size
+        self.max_accumulation = max(1, round(self.equivalent_batch_size / scaled_batch))
 
-    def on_train_epoch_start(self, trainer: "Trainer", pl_module: "LightningModule") -> None:
-        self.current_batch = trainer.global_step
+    def on_train_start(self, trainer: "Trainer", pl_module: "LightningModule") -> None:
+        # configure_optimizers has already run — read steps_per_epoch from the scheduler
+        # so there is a single source of truth.
+        for sched_cfg in trainer.lr_scheduler_configs:
+            if hasattr(sched_cfg.scheduler, "steps_per_epoch"):
+                self.steps_per_epoch = sched_cfg.scheduler.steps_per_epoch
+                break
+        self.warmup_batches = int(self.warmup_epochs * self.steps_per_epoch)
 
     def on_train_batch_start(self, trainer: "Trainer", pl_module: "LightningModule", *args, **kwargs) -> None:
-        if self.current_batch < self.warmup_batches:
-            current_accumulation = round(lerp(1, self.max_accumulation, self.current_batch, self.warmup_batches))
+        # trainer.global_step is in optimizer-step units and is synced across all DDP ranks
+        # by Lightning — safe to use directly without per-batch tracking.
+        step = trainer.global_step
+        if step < self.warmup_batches:
+            current_accumulation = round(lerp(1, self.max_accumulation, step, self.warmup_batches))
         else:
             current_accumulation = self.max_accumulation
         trainer.accumulate_grad_batches = current_accumulation
-
-    def on_train_batch_end(self, trainer: "Trainer", pl_module: "LightningModule", *args, **kwargs) -> None:
-        self.current_batch += 1
-
-
-def create_optimizer(model: YOLO, optim_cfg: OptimizerConfig) -> Optimizer:
-    """Create an optimizer for the given model parameters based on the configuration.
-
-    Returns:
-        An instance of the optimizer configured according to the provided settings.
-    """
-    optimizer_class: Type[Optimizer] = getattr(torch.optim, optim_cfg.type)
-
-    bias_params = [p for name, p in model.named_parameters() if "bias" in name]
-    norm_params = [p for name, p in model.named_parameters() if "weight" in name and "bn" in name]
-    conv_params = [p for name, p in model.named_parameters() if "weight" in name and "bn" not in name]
-
-    model_parameters = [
-        {"params": bias_params, "momentum": 0.937, "weight_decay": 0},
-        {"params": conv_params, "momentum": 0.937},
-        {"params": norm_params, "momentum": 0.937, "weight_decay": 0},
-    ]
-
-    def next_epoch(self, batch_num, epoch_idx):
-        self.min_lr = self.max_lr
-        self.max_lr = [param["lr"] for param in self.param_groups]
-        # TODO: load momentum from config instead a fix number
-        #       0.937: Start Momentum
-        #       0.8  : Normal Momemtum
-        #       3    : The warm up epoch num
-        self.min_mom = lerp(0.8, 0.937, min(epoch_idx, 3), 3)
-        self.max_mom = lerp(0.8, 0.937, min(epoch_idx + 1, 3), 3)
-        self.batch_num = batch_num
-        self.batch_idx = 0
-
-    def next_batch(self):
-        self.batch_idx += 1
-        lr_dict = dict()
-        for lr_idx, param_group in enumerate(self.param_groups):
-            min_lr, max_lr = self.min_lr[lr_idx], self.max_lr[lr_idx]
-            param_group["lr"] = lerp(min_lr, max_lr, self.batch_idx, self.batch_num)
-            param_group["momentum"] = lerp(self.min_mom, self.max_mom, self.batch_idx, self.batch_num)
-            lr_dict[f"LR/{lr_idx}"] = param_group["lr"]
-            lr_dict[f"momentum/{lr_idx}"] = param_group["momentum"]
-        return lr_dict
-
-    optimizer_class.next_batch = next_batch
-    optimizer_class.next_epoch = next_epoch
-
-    optimizer = optimizer_class(model_parameters, **optim_cfg.args)
-    optimizer.max_lr = [0.1, 0, 0]
-    return optimizer
-
-
-def create_scheduler(optimizer: Optimizer, schedule_cfg: SchedulerConfig) -> _LRScheduler:
-    """Create a learning rate scheduler for the given optimizer based on the configuration.
-
-    Returns:
-        An instance of the scheduler configured according to the provided settings.
-    """
-    scheduler_class: Type[_LRScheduler] = getattr(torch.optim.lr_scheduler, schedule_cfg.type)
-    schedule = scheduler_class(optimizer, **schedule_cfg.args)
-    if hasattr(schedule_cfg, "warmup"):
-        wepoch = schedule_cfg.warmup.epochs
-        lambda1 = lambda epoch: (epoch + 1) / wepoch if epoch < wepoch else 1
-        lambda2 = lambda epoch: 10 - 9 * ((epoch + 1) / wepoch) if epoch < wepoch else 1
-        warmup_schedule = LambdaLR(optimizer, lr_lambda=[lambda2, lambda1, lambda1])
-        schedule = SequentialLR(optimizer, schedulers=[warmup_schedule, schedule], milestones=[wepoch - 1])
-    return schedule
 
 
 def initialize_distributed() -> None:

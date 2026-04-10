@@ -10,3 +10,8 @@ Solver
     :members:
     :undoc-members:
     :show-inheritance:
+
+.. automodule:: yolo.utils.optim_utils
+    :members:
+    :undoc-members:
+    :show-inheritance:

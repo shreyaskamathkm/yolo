@@ -21,7 +21,12 @@ import numpy as np
 import torch
 import wandb
 from lightning import LightningModule, Trainer, seed_everything
-from lightning.pytorch.callbacks import Callback, RichModelSummary, RichProgressBar
+from lightning.pytorch.callbacks import (
+    Callback,
+    LearningRateMonitor,
+    RichModelSummary,
+    RichProgressBar,
+)
 from lightning.pytorch.callbacks.progress.rich_progress import CustomProgress
 from lightning.pytorch.loggers import TensorBoardLogger, WandbLogger
 from lightning.pytorch.utilities import rank_zero_only
@@ -272,6 +277,8 @@ def setup(cfg: Config):
 
     progress, loggers = [], []
 
+    if cfg.task.task == "train":
+        progress.append(LearningRateMonitor(logging_interval="step"))
     if cfg.task.task == "train" and hasattr(cfg.task.data, "equivalent_batch_size"):
         progress.append(GradientAccumulation(data_cfg=cfg.task.data, scheduler_cfg=cfg.task.scheduler))
 

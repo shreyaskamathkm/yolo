@@ -61,6 +61,7 @@ class DataConfig:
     source: Optional[Union[str, int]]
     dynamic_shape: Optional[bool]
     equivalent_batch_size: Optional[int] = 64
+    drop_last: bool = True
 
 
 @dataclass
