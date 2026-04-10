@@ -1,19 +1,46 @@
 [project]
 name = "yolo"
 version = "0.1.0"
-dynamic = ["dependencies"]
 description = "Official Implementation of YOLO"
 authors = [
     { name = "Hao-Tang, Tsui", email = "henrytsui000@gmail.com" },
 ]
 readme = "README.md"
 license = { file = "LICENSE" }
-requires-python = ">=3.6"
+requires-python = ">=3.8"
 keywords = ["yolo", "object detection", "computer vision"]
+dependencies = [
+    "einops",
+    "faster-coco-eval",
+    "graphviz",
+    "hydra-core",
+    "lightning",
+    "loguru",
+    "numpy",
+    "opencv-python",
+    "Pillow",
+    "pycocotools",
+    "requests",
+    "rich",
+    "torch",
+    "torchvision",
+    "wandb",
+]
 
-
-[tool.setuptools.dynamic]
-dependencies = {file = ["requirements.txt"]}
+[project.optional-dependencies]
+dev = [
+    "yolo[docs]",
+    "gradio",
+    "pytest",
+    "pytest-cov",
+    "pre-commit",
+    "tensorboard",
+]
+docs = [
+    "mkdocs-material",
+    "mkdocstrings[python]",
+    "pymdown-extensions",
+]
 
 [tool.setuptools.packages.find]
 where = ["."]

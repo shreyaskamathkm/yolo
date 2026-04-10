@@ -5,7 +5,9 @@ PIP ?= pip
 .PHONY: help setup install \
         test test-model test-tools test-utils \
         lint pre-commit-install pre-commit-run pre-commit-all \
-        docs docs-serve docs-deploy clean test-all ci
+        docs docs-serve docs-deploy \
+        docker-build docker-run \
+        clean test-all ci
 
 # Default target
 help:
@@ -36,6 +38,10 @@ help:
 	@echo "  test-all             Run lint + all tests"
 	@echo "  ci                   Full CI pipeline (install-dev + install-editable + lint + test)"
 	@echo ""
+	@echo "Docker"
+	@echo "  docker-build         Build the Docker image"
+	@echo "  docker-run           Run the Docker image with GPU support"
+	@echo ""
 	@echo "Misc"
 	@echo "  clean                Remove build artifacts, caches, and coverage reports"
 
@@ -43,8 +49,7 @@ help:
 
 install:
 	@echo "--- Installing dependencies ---"
-	$(PIP) install -r requirements-dev.txt
-	$(PIP) install -e .
+	$(PIP) install -e .[dev]
 
 setup:
 	@if [ ! -d "$(VENV)" ]; then \
@@ -105,6 +110,18 @@ docs-serve:
 docs-deploy:
 	@echo "--- Deploying documentation to GitHub Pages ---"
 	mkdocs gh-deploy --force
+
+# ── Docker ───────────────────────────────────────────────────────────────────
+
+DOCKER_IMAGE ?= yolo
+
+docker-build:
+	@echo "--- Building Docker image $(DOCKER_IMAGE) ---"
+	docker build -f docker/Dockerfile -t $(DOCKER_IMAGE) .
+
+docker-run:
+	@echo "--- Running Docker image $(DOCKER_IMAGE) with GPU support ---"
+	docker run --gpus all -it $(DOCKER_IMAGE)
 
 # ── CI ───────────────────────────────────────────────────────────────────────
 
