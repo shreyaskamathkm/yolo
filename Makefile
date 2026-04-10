@@ -5,7 +5,7 @@ PIP ?= pip
 .PHONY: help setup install \
         test test-model test-tools test-utils \
         lint pre-commit-install pre-commit-run pre-commit-all \
-        docs clean test-all ci
+        docs docs-serve docs-deploy clean test-all ci
 
 # Default target
 help:
@@ -29,6 +29,8 @@ help:
 	@echo ""
 	@echo "Docs"
 	@echo "  docs                 Build HTML documentation"
+	@echo "  docs-serve           Serve docs locally with live reload"
+	@echo "  docs-deploy          Deploy docs to GitHub Pages"
 	@echo ""
 	@echo "CI"
 	@echo "  test-all             Run lint + all tests"
@@ -94,7 +96,15 @@ lint: pre-commit-all
 
 docs:
 	@echo "--- Building HTML documentation ---"
-	$(MAKE) -C docs html
+	mkdocs build
+
+docs-serve:
+	@echo "--- Serving documentation locally ---"
+	mkdocs serve
+
+docs-deploy:
+	@echo "--- Deploying documentation to GitHub Pages ---"
+	mkdocs gh-deploy --force
 
 # ── CI ───────────────────────────────────────────────────────────────────────
 
@@ -115,4 +125,4 @@ clean:
 	rm -rf .coverage htmlcov/
 	rm -rf .pytest_cache/
 	rm -rf .mypy_cache/
-	rm -rf docs/_build/
+	rm -rf site/

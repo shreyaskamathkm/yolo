@@ -132,9 +132,15 @@ Custom transformations should be designed to accept an image and its bounding bo
         - `func` log_model_structure: give a torch model, print it as a table
         - `func` validate_log_directory: for given experiemnt, check if the log folder already existed
     - **model_utils**
-        - `class` ExponentialMovingAverage: a mirror of model, do ema on model
-        - `func` create_optimizer: return a optimzer, for example SDG, ADAM
-        - `func` create_scheduler: return a scheduler, for example Step, Lambda
+        - `class` EMA: Lightning Callback that maintains an exponential moving average of model weights
+        - `class` GradientAccumulation: Lightning Callback that ramps gradient accumulation steps during warmup
+    - **optim_utils**
+        - `func` lerp: linear interpolation between two values
+        - `class` LinearWarmupPolicy: uniform LR ramp from 0 → initial_lr over warmup epochs
+        - `class` YOLOWarmupPolicy: YOLO-style warmup — bias group drops, other groups rise
+        - `class` WarmupBatchScheduler: batch-level LR and momentum scheduler with epoch-aware warmup
+        - `func` create_optimizer: return an optimizer, for example SGD, Adam
+        - `func` create_scheduler: return a WarmupBatchScheduler wrapping an epoch-level scheduler
     - **module_utils**
         - `func` get_layer_map:
         - `func` auto_pad: given a convolution block, return how many pixel should conv padding
