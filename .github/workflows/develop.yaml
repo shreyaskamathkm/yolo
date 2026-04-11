@@ -23,7 +23,7 @@ jobs:
       uses: actions/cache@v4
       with:
         path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}-3.10
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/pyproject.toml') }}-3.10
         restore-keys: |
           ${{ runner.os }}-pip-
 

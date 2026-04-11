@@ -1,14 +1,10 @@
 # YOLO: Official Implementation of YOLOv9, YOLOv7, YOLO-RD
 
-[![Documentation Status](https://readthedocs.org/projects/yolo-docs/badge/?version=latest)](https://yolo-docs.readthedocs.io/en/latest/?badge=latest)
-![GitHub License](https://img.shields.io/github/license/WongKinYiu/YOLO)
+[![Documentation](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://shreyaskamathkm.github.io/yolo/)
+![GitHub License](https://img.shields.io/github/license/shreyaskamathkm/yolo)
 
-[![Developer Mode Build & Test](https://github.com/WongKinYiu/YOLO/actions/workflows/develop.yaml/badge.svg)](https://github.com/WongKinYiu/YOLO/actions/workflows/develop.yaml)
-[![Deploy Mode Validation & Inference](https://github.com/WongKinYiu/YOLO/actions/workflows/deploy.yaml/badge.svg)](https://github.com/WongKinYiu/YOLO/actions/workflows/deploy.yaml)
-
-
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)]()
-[![Hugging Face Spaces](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Spaces-green)](https://huggingface.co/spaces/henry000/YOLO)
+[![Developer Mode Build & Test](https://github.com/shreyaskamathkm/yolo/actions/workflows/develop.yaml/badge.svg)](https://github.com/shreyaskamathkm/yolo/actions/workflows/develop.yaml)
+[![Deploy Mode Validation & Inference](https://github.com/shreyaskamathkm/yolo/actions/workflows/deploy.yaml/badge.svg)](https://github.com/shreyaskamathkm/yolo/actions/workflows/deploy.yaml)
 
 <!-- > [!IMPORTANT]
 > This project is currently a Work In Progress and may undergo significant changes. It is not recommended for use in production environments until further notice. Please check back regularly for updates.
@@ -23,7 +19,7 @@ Welcome to the official implementation of YOLOv7[^1] and YOLOv9[^2], YOLO-RD[^3]
 - For quick deployment: you can directly install by pip+git:
 
 ```shell
-pip install git+https://github.com/WongKinYiu/YOLO.git
+pip install git+https://github.com/shreyaskamathkm/yolo.git
 yolo task.data.source=0 # source could be a single file, video, image folder, webcam ID
 ```
 
@@ -38,7 +34,7 @@ yolo task.data.source=0 # source could be a single file, video, image folder, we
 To get started using YOLOv9's developer mode, clone this repository and run:
 
 ```shell
-git clone git@github.com:WongKinYiu/YOLO.git
+git clone git@github.com:shreyaskamathkm/yolo.git
 cd YOLO
 make setup
 ```
@@ -108,10 +104,6 @@ python yolo/lazy.py task=validation dataset=toy
 ## Contributing
 
 Contributions to the YOLO project are welcome! See [CONTRIBUTING](docs/CONTRIBUTING.md) for guidelines on how to contribute.
-
-## Star History
-
-[![Star History Chart](https://api.star-history.com/svg?repos=MultimediaTechLab/YOLO&type=Date)](https://star-history.com/#MultimediaTechLab/YOLO&Date)
 
 ## Citations
 
