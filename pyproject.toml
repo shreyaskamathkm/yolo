@@ -1,6 +1,6 @@
 [project]
 name = "yolo"
-version = "0.1.0"
+version = "0.1.1"
 description = "Official Implementation of YOLO"
 authors = [
     { name = "Hao-Tang, Tsui", email = "henrytsui000@gmail.com" },
@@ -30,6 +30,7 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "yolo[docs]",
+    "bump-my-version",
     "gradio",
     "pytest",
     "pytest-cov",
@@ -59,3 +60,14 @@ requires = [
 
 [project.scripts]
 yolo = "yolo.lazy:main"
+
+[tool.bumpversion]
+current_version = "0.1.1"
+commit = true
+tag = false
+message = "chore: bump version {current_version} -> {new_version}"
+
+[[tool.bumpversion.files]]
+filename = "pyproject.toml"
+search = 'version = "{current_version}"'
+replace = 'version = "{new_version}"'

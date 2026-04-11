@@ -7,6 +7,7 @@ PIP ?= pip
         lint pre-commit-install pre-commit-run pre-commit-all \
         docs docs-serve docs-deploy \
         docker-build docker-run \
+        bump-patch bump-minor bump-major \
         clean test-all ci
 
 # Default target
@@ -41,6 +42,11 @@ help:
 	@echo "Docker"
 	@echo "  docker-build         Build the Docker image"
 	@echo "  docker-run           Run the Docker image with GPU support"
+	@echo ""
+	@echo "Release"
+	@echo "  bump-patch           Bump patch version (0.1.0 → 0.1.1) and commit locally"
+	@echo "  bump-minor           Bump minor version (0.1.0 → 0.2.0) and commit locally"
+	@echo "  bump-major           Bump major version (0.1.0 → 1.0.0) and commit locally"
 	@echo ""
 	@echo "Misc"
 	@echo "  clean                Remove build artifacts, caches, and coverage reports"
@@ -122,6 +128,20 @@ docker-build:
 docker-run:
 	@echo "--- Running Docker image $(DOCKER_IMAGE) with GPU support ---"
 	docker run --gpus all -it $(DOCKER_IMAGE)
+
+# ── Release ──────────────────────────────────────────────────────────────────
+
+bump-patch:
+	@echo "--- Bumping patch version ---"
+	bump-my-version bump patch
+
+bump-minor:
+	@echo "--- Bumping minor version ---"
+	bump-my-version bump minor
+
+bump-major:
+	@echo "--- Bumping major version ---"
+	bump-my-version bump major
 
 # ── CI ───────────────────────────────────────────────────────────────────────
 
