@@ -20,6 +20,12 @@ Please delete options that are not relevant.
 - [ ] Breaking change (fix or feature that would cause existing functionality to not work as expected)
 - [ ] This change requires a documentation update
 
+## Version Bump
+
+- [ ] I have bumped the version in `pyproject.toml` (`make bump-patch` / `bump-minor` / `bump-major`)
+
+Bump guide: patch = bug fix, minor = new feature, major = breaking change.
+
 ## Checklist:
 
 - [ ] The code follows the Python style guide.
