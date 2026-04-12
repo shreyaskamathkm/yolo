@@ -37,6 +37,10 @@ jobs:
           fi
           echo "Version bumped: $MAIN_VER -> $PR_VER"
 
-  build_and_test:
+  lint_and_test:
     needs: version-check
-    uses: ./.github/workflows/_build-test.yaml
+    uses: ./.github/workflows/_lint-test.yaml
+
+  validate_and_infer:
+    needs: version-check
+    uses: ./.github/workflows/_validate-inference.yaml

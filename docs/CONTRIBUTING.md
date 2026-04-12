@@ -5,8 +5,8 @@ Thank you for your interest in contributing to this project! We value your contr
 ## Quick Links
 - [Main README](../README.md)
 - [License](../LICENSE)
-- [Issue Tracker](https://github.com/WongKinYiu/yolov9mit/issues)
-- [Pull Requests](https://github.com/WongKinYiu/yolov9mit/pulls)
+- [Issue Tracker](https://github.com/shreyaskamathkm/yolo/issues)
+- [Pull Requests](https://github.com/shreyaskamathkm/yolo/pulls)
 
 ## Testing and Formatting
 We strive to maintain a high standard of quality in our codebase:
@@ -15,24 +15,34 @@ We strive to maintain a high standard of quality in our codebase:
 
 ## CI Workflows
 
-All workflows live in `.github/workflows/`. The build and test logic is defined once in `_build-test.yaml` and shared across workflows.
+All workflows live in `.github/workflows/`. Shared logic is defined once in reusable workflows (prefixed `_`) and called from the top-level workflows.
 
-| Workflow | Trigger | What it does |
+| File | Trigger | What it does |
 |---|---|---|
-| `pr-checks.yaml` | PR to `main` | Runs version check, then lint + test if it passes |
-| `develop.yaml` | Push to `main` | Lint + test after merge |
+| `pr.yaml` | PR to `main` | Version check → lint/test + validation/inference |
+| `ci.yaml` | Push to `main` | Lint + test after merge |
+| `integration.yaml` | Push to `main` | Validation + inference after merge |
 | `release.yaml` | Push to `main` | Creates git tag and GitHub Release |
+| `docker.yaml` | GitHub Release published | Builds and pushes Docker image to Docker Hub |
 | `docs.yaml` | Push to `main` (docs changed) | Deploys docs to GitHub Pages |
+
+Reusable (internal, not triggered directly):
+
+| File | Used by |
+|---|---|
+| `_lint-test.yaml` | `pr.yaml`, `ci.yaml` |
+| `_validate-inference.yaml` | `pr.yaml`, `integration.yaml` |
 
 ### PR check order
 
 ```
 PR opened
-├── version-check        (fast gate, ~5s)
+├── version-check              (fast gate, ~5s)
 │     ✅ pass
-│     └── build_and_test (lint + test)
-│           ✅ pass → merge allowed
-│           ❌ fail → merge blocked
+│     ├── lint_and_test        (lint + test)
+│     └── validate_and_infer   (validation + inference, Python 3.8 + 3.10)
+│           all ✅ → merge allowed
+│           any ❌ → merge blocked
 ```
 
 Tests are skipped entirely if the version wasn't bumped — no CI minutes are wasted.
@@ -41,8 +51,10 @@ Tests are skipped entirely if the version wasn't bumped — no CI minutes are wa
 
 ```
 PR merged to main
-├── CI (develop.yaml)   → lint + test
-└── release.yaml        → git tag + GitHub Release
+├── ci.yaml          → lint + test
+├── integration.yaml → validation + inference
+├── release.yaml     → git tag + GitHub Release
+└── docker.yaml      → Docker Publish (triggered by the GitHub Release)
 ```
 
 ## How to Contribute
@@ -85,4 +97,4 @@ Once you submit a PR, maintainers will review your work, suggest changes if nece
 
 Your contributions are greatly appreciated and vital to the project's success!
 
-Please feel free to contact [henrytsui000@gmail.com](mailto:henrytsui000@gmail.com)!
+Please feel free to open an [issue](https://github.com/shreyaskamathkm/yolo/issues) or start a [discussion](https://github.com/shreyaskamathkm/yolo/discussions)!

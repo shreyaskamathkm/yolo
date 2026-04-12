@@ -1,0 +1,9 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  lint_and_test:
+    uses: ./.github/workflows/_lint-test.yaml

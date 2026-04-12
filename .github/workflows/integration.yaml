@@ -1,0 +1,9 @@
+name: Integration Tests
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  validate_and_infer:
+    uses: ./.github/workflows/_validate-inference.yaml
