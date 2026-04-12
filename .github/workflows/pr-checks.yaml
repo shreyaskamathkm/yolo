@@ -1,16 +1,14 @@
-name: Version Check
+name: PR Checks
 
 on:
   pull_request:
     branches: [main]
 
 jobs:
-  check-version-bump:
+  version-check:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -34,8 +32,42 @@ jobs:
           echo "main version : $MAIN_VER"
           echo "PR version   : $PR_VER"
           if [ "$PR_VER" = "$MAIN_VER" ]; then
-            echo ""
             echo "ERROR: Version not bumped. Update version in pyproject.toml before merging."
             exit 1
           fi
           echo "Version bumped: $MAIN_VER -> $PR_VER"
+
+  build_and_test:
+    needs: version-check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Cache pip dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/pyproject.toml') }}-3.10
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install dependencies
+        run: make install
+
+      - name: Cache pre-commit environment
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pre-commit
+          key: ${{ runner.os }}-precommit-${{ hashFiles('**/.pre-commit-config.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-precommit-
+
+      - name: Lint
+        run: make lint
+
+      - name: Test
+        run: make test

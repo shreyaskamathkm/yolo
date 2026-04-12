@@ -1,9 +1,7 @@
-name: Developer Mode Build & Test
+name: CI
 
 on:
   push:
-    branches: [main]
-  pull_request:
     branches: [main]
 
 jobs:
