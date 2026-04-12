@@ -3,8 +3,6 @@ name: Deploy Mode Validation & Inference
 on:
   push:
     branches: [main]
-  pull_request:
-    branches: [main]
 
 jobs:
   deploy:
