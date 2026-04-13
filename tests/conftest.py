@@ -1,6 +1,3 @@
-import sys
-from pathlib import Path
-
 import pytest
 import torch
 import torch.nn as nn
@@ -8,9 +5,6 @@ import torch.nn.functional as F
 from hydra import compose, initialize
 from lightning import LightningModule, Trainer
 from torch.utils.data import Dataset
-
-project_root = Path(__file__).resolve().parent.parent
-sys.path.append(str(project_root))
 
 from yolo import Anc2Box, Config, Vec2Box, create_converter, create_model
 from yolo.model.yolo import YOLO

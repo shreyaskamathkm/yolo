@@ -1,10 +1,4 @@
-import sys
-from pathlib import Path
-
 import torch
-
-project_root = Path(__file__).resolve().parent.parent.parent
-sys.path.append(str(project_root))
 
 from yolo.model.module import SPPELAN, ADown, CBLinear, Conv, Pool
 

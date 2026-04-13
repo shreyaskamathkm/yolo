@@ -138,14 +138,8 @@ def convert_weight_seg(old_state_dict, new_state_dict):
     return new_state_dict
 
 
-import sys
-from pathlib import Path
-
 import hydra
 import torch
-
-project_root = Path(__file__).resolve().parent.parent.parent
-sys.path.append(str(project_root))
 
 from yolo.config.config import Config
 from yolo.tools.solver import BaseModel

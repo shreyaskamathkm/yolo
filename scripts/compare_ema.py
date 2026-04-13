@@ -14,10 +14,8 @@ Usage:
     python scripts/compare_ema.py
 """
 
-import sys
 from copy import deepcopy
 from math import exp
-from pathlib import Path
 from typing import Dict, List, Optional
 
 import torch
@@ -27,9 +25,6 @@ from lightning import LightningModule, Trainer
 from lightning.pytorch.callbacks import Callback
 from torch import no_grad
 from torch.utils.data import DataLoader, TensorDataset
-
-project_root = Path(__file__).resolve().parent.parent
-sys.path.append(str(project_root))
 
 from yolo.utils.logger import logger
 from yolo.utils.model_utils import EMA as UpdatedEMA

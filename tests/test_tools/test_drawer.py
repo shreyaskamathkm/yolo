@@ -1,11 +1,5 @@
-import sys
-from pathlib import Path
-
 from PIL import Image
 from torch import tensor
-
-project_root = Path(__file__).resolve().parent.parent.parent
-sys.path.append(str(project_root))
 
 from yolo.config.config import Config
 from yolo.model.yolo import YOLO

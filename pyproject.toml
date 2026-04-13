@@ -1,13 +1,13 @@
 [project]
 name = "yolo"
-version = "0.1.1"
+version = "0.1.2"
 description = "Official Implementation of YOLO"
 authors = [
     { name = "Hao-Tang, Tsui", email = "henrytsui000@gmail.com" },
 ]
 readme = "README.md"
 license = { file = "LICENSE" }
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 keywords = ["yolo", "object detection", "computer vision"]
 dependencies = [
     "einops",
@@ -52,6 +52,9 @@ package-data = {"yolo" = ["**/*.yaml"]}
 include-package-data = true
 
 
+[tool.pytest.ini_options]
+pythonpath = ["."]
+
 [build-system]
 build-backend = "setuptools.build_meta"
 requires = [
@@ -62,7 +65,7 @@ requires = [
 yolo = "yolo.lazy:main"
 
 [tool.bumpversion]
-current_version = "0.1.1"
+current_version = "0.1.2"
 commit = true
 tag = false
 message = "chore: bump version {current_version} -> {new_version}"

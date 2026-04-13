@@ -14,13 +14,11 @@ from torch.optim import SGD
 from torch.optim.lr_scheduler import CosineAnnealingLR
 
 matplotlib.use("Agg")
-import sys
 from pathlib import Path
 
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
 from yolo.utils.optim_utils import WarmupBatchScheduler, YOLOWarmupPolicy
 
 # ── Config ────────────────────────────────────────────────────────────────────
