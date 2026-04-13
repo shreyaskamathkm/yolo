@@ -1,6 +1,12 @@
-accelerator: auto
-device: auto
-cpu_num: 16
+trainer:
+  accelerator: auto
+  device: auto
+  precision: 32-true  # use bf16-mixed on Ampere+ GPU, 16-mixed can produce NaN
+  sync_batchnorm: True
+  log_every_n_steps: 1
+  gradient_clip_val: 10
+  gradient_clip_algorithm: norm
+  deterministic: True
 
 image_size: [640, 640]
 
@@ -8,7 +14,7 @@ out_path: runs
 exist_ok: True
 
 lucky_number: 10
-use_wandb: True
+use_wandb: False
 use_tensorboard: False
 
 weight: True # Path to weight or True for auto, False for no pretrained weight

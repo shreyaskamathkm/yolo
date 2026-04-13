@@ -353,7 +353,8 @@ class Vec2Box:
     def create_auto_anchor(self, model: YOLO, image_size):
         W, H = image_size
         # TODO: need accelerate dummy test
-        dummy_input = torch.zeros(1, 3, H, W)
+        device = next(model.parameters()).device
+        dummy_input = torch.zeros(1, 3, H, W, device=device)
         dummy_output = model(dummy_input)
         strides = []
         for predict_head in dummy_output["Main"]:
@@ -407,7 +408,7 @@ class Anc2Box:
 
     def create_auto_anchor(self, model: YOLO, image_size):
         W, H = image_size
-        dummy_input = torch.zeros(1, 3, H, W).to(self.device)
+        dummy_input = torch.zeros(1, 3, H, W, device=self.device)
         dummy_output = model(dummy_input)
         strides = []
         for predict_head in dummy_output["Main"]:

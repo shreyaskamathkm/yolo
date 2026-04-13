@@ -55,7 +55,7 @@ class DataConfig:
     shuffle: bool
     batch_size: int
     pin_memory: bool
-    cpu_num: int
+    dataloader_workers: int
     image_size: List[int]
     data_augment: Dict[str, int]
     source: Optional[Union[str, int]]
@@ -82,6 +82,18 @@ class MatcherConfig:
     iou: str
     topk: int
     factor: Dict[str, int]
+
+
+@dataclass
+class TrainerConfig:
+    accelerator: str = "auto"
+    device: Union[str, int] = "auto"
+    precision: str = "32-true"
+    sync_batchnorm: bool = True
+    log_every_n_steps: int = 1
+    gradient_clip_val: float = 10.0
+    gradient_clip_algorithm: str = "norm"
+    deterministic: bool = True
 
 
 @dataclass
@@ -146,16 +158,14 @@ class Config:
     model: ModelConfig
     name: str
 
-    accelerator: Optional[str]
-    device: Union[str, int, List[int]]
-    cpu_num: int
+    trainer: TrainerConfig
 
     image_size: List[int]
 
     out_path: str
     exist_ok: bool
 
-    lucky_number: 10
+    lucky_number: int
     use_wandb: bool
     use_tensorboard: bool
 

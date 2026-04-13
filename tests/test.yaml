@@ -1,0 +1,12 @@
+hydra:
+  searchpath:
+    - file://yolo/config
+
+name: test
+
+defaults:
+  - _self_
+  - task: inference
+  - dataset: mock
+  - model: v9-c
+  - general

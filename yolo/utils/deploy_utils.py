@@ -23,7 +23,7 @@ class FastModelLoader:
         if self.compiler not in ["onnx", "trt", "deploy"]:
             logger.warning(f":warning: Compiler '{self.compiler}' is not supported. Using original model.")
             self.compiler = None
-        if self.cfg.device == "mps" and self.compiler == "trt":
+        if self.cfg.trainer.device == "mps" and self.compiler == "trt":
             logger.warning(":red_apple: TensorRT does not support MPS devices. Using original model.")
             self.compiler = None
 

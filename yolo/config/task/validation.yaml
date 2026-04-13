@@ -3,7 +3,7 @@ task: validation
 data:
   batch_size: 32
   image_size: ${image_size}
-  cpu_num: ${cpu_num}
+  dataloader_workers: 4
   shuffle: False
   pin_memory: True
   data_augment: {}

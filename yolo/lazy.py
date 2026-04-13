@@ -10,18 +10,19 @@ from yolo.utils.logging_utils import setup
 def main(cfg: Config):
     callbacks, loggers, save_path = setup(cfg)
 
+    trainer_cfg = cfg.trainer
     trainer = Trainer(
-        accelerator=getattr(cfg, "accelerator", "auto"),
-        devices=cfg.device,
+        accelerator=trainer_cfg.accelerator,
+        devices=trainer_cfg.device,
         max_epochs=getattr(cfg.task, "epoch", None),
-        precision="16-mixed",
+        precision=trainer_cfg.precision,
         callbacks=callbacks,
-        sync_batchnorm=True,
+        sync_batchnorm=trainer_cfg.sync_batchnorm,
         logger=loggers,
-        log_every_n_steps=1,
-        gradient_clip_val=10,
-        gradient_clip_algorithm="norm",
-        deterministic=True,
+        log_every_n_steps=trainer_cfg.log_every_n_steps,
+        gradient_clip_val=trainer_cfg.gradient_clip_val,
+        gradient_clip_algorithm=trainer_cfg.gradient_clip_algorithm,
+        deterministic=trainer_cfg.deterministic,
         enable_progress_bar=not getattr(cfg, "quiet", False),
         default_root_dir=save_path,
     )
