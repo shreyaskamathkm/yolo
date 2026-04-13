@@ -239,7 +239,7 @@ def create_dataloader(data_cfg: DataConfig, dataset_cfg: DatasetConfig, task: st
     return DataLoader(
         dataset,
         batch_size=data_cfg.batch_size,
-        num_workers=data_cfg.cpu_num,
+        num_workers=data_cfg.dataloader_workers,
         pin_memory=data_cfg.pin_memory,
         collate_fn=collate_fn,
         drop_last=data_cfg.drop_last,

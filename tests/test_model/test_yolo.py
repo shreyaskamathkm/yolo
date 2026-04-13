@@ -6,13 +6,13 @@ from omegaconf import OmegaConf
 from yolo.config.config import Config
 from yolo.model.yolo import YOLO, create_model
 
-config_path = "../../yolo/config"
-config_name = "config"
+config_path = ".."
+config_name = "test"
 
 
 def test_build_model_v9c():
     with initialize(config_path=config_path, version_base=None):
-        cfg: Config = compose(config_name=config_name)
+        cfg: Config = compose(config_name=config_name, overrides=["model=v9-c"])
 
         OmegaConf.set_struct(cfg.model, False)
         cfg.weight = None
@@ -42,8 +42,8 @@ def test_build_model_v7():
 
 @pytest.fixture
 def cfg() -> Config:
-    with initialize(config_path="../../yolo/config", version_base=None):
-        cfg: Config = compose(config_name="config")
+    with initialize(config_path="..", version_base=None):
+        cfg: Config = compose(config_name="test", overrides=["model=v9-c"])
         cfg.weight = None
     return cfg
 

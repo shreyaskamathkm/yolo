@@ -18,9 +18,9 @@ def pytest_configure(config):
 
 
 def get_cfg(overrides=[]) -> Config:
-    config_path = "../yolo/config"
+    config_path = "."
     with initialize(config_path=config_path, version_base=None):
-        cfg: Config = compose(config_name="config", overrides=overrides)
+        cfg: Config = compose(config_name="test", overrides=overrides)
         set_seed(cfg.lucky_number)
         return cfg
 

@@ -10,7 +10,7 @@ data:
   equivalent_batch_size: 64
   drop_last: True
   image_size: ${image_size}
-  cpu_num: ${cpu_num}
+  dataloader_workers: 4
   shuffle: True
   pin_memory: True
   data_augment:
