@@ -1,11 +1,8 @@
-import sys
 from pathlib import Path
 
 import gradio
 import torch
 from omegaconf import OmegaConf
-
-sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 from yolo import (
     AugmentationComposer,

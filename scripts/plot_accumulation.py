@@ -9,7 +9,6 @@ Usage:
     python scripts/plot_accumulation.py
 """
 
-import sys
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -23,7 +22,6 @@ import torch.nn as nn
 from torch.optim import SGD
 from torch.optim.lr_scheduler import CosineAnnealingLR
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
 from yolo.utils.model_utils import GradientAccumulation
 from yolo.utils.optim_utils import WarmupBatchScheduler, YOLOWarmupPolicy
 

@@ -1,13 +1,7 @@
-import sys
-from pathlib import Path
-
 import pytest
 import torch
 from hydra import compose, initialize
 from omegaconf import OmegaConf
-
-project_root = Path(__file__).resolve().parent.parent.parent
-sys.path.append(str(project_root))
 
 from yolo.config.config import Config
 from yolo.model.yolo import YOLO, create_model

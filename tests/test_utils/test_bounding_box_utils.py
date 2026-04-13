@@ -1,13 +1,8 @@
-import sys
-from pathlib import Path
-
 import pytest
 import torch
 from hydra import compose, initialize
 from torch import allclose, float32, isclose, tensor
 
-project_root = Path(__file__).resolve().parent.parent.parent
-sys.path.append(str(project_root))
 from yolo import Config, NMSConfig, create_model
 from yolo.config.config import AnchorConfig
 from yolo.utils.bounding_box_utils import (

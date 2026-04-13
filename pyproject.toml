@@ -7,7 +7,7 @@ authors = [
 ]
 readme = "README.md"
 license = { file = "LICENSE" }
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 keywords = ["yolo", "object detection", "computer vision"]
 dependencies = [
     "einops",
@@ -51,6 +51,9 @@ include = ["yolo*"]
 package-data = {"yolo" = ["**/*.yaml"]}
 include-package-data = true
 
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
 
 [build-system]
 build-backend = "setuptools.build_meta"

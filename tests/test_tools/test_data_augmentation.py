@@ -1,12 +1,6 @@
-import sys
-from pathlib import Path
-
 import torch
 from PIL import Image
 from torchvision.transforms import functional as TF
-
-project_root = Path(__file__).resolve().parent.parent.parent
-sys.path.append(str(project_root))
 
 from yolo.tools.data_augmentation import (
     AugmentationComposer,

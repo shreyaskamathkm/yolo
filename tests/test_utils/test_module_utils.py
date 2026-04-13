@@ -1,12 +1,8 @@
 import re
-import sys
-from pathlib import Path
 
 import pytest
 from torch import nn
 
-project_root = Path(__file__).resolve().parent.parent.parent
-sys.path.append(str(project_root))
 from yolo.utils.module_utils import (
     auto_pad,
     create_activation_function,
