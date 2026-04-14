@@ -41,9 +41,9 @@ from torch.nn import ModuleList
 from typing_extensions import override
 
 from yolo.config.config import Config, YOLOLayer
-from yolo.model.yolo import YOLO
+from yolo.model.builder import YOLO
+from yolo.training.callbacks import EMA, GradientAccumulation
 from yolo.utils.logger import logger
-from yolo.utils.model_utils import EMA, GradientAccumulation
 from yolo.utils.solver_utils import make_ap_table
 
 

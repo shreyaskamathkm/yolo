@@ -3,13 +3,13 @@
 ## Inference on an Image
 
 ```bash
-python yolo/lazy.py task=inference task.data.source=demo/images/inference/image.png
+python -m yolo task=inference task.data.source=demo/images/inference/image.png
 ```
 
 ## Inference on a Video
 
 ```bash
-python yolo/lazy.py task=inference task.data.source=demo/videos/sample.mp4
+python -m yolo task=inference task.data.source=demo/videos/sample.mp4
 ```
 
 ## Inference Config Reference

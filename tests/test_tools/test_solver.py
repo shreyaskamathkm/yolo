@@ -5,10 +5,10 @@ from lightning.pytorch import Trainer
 from torch.utils.data import DataLoader
 
 from yolo.config.config import Config
-from yolo.model.yolo import YOLO
-from yolo.tools.data_loader import StreamDataLoader
-from yolo.tools.solver import InferenceModel, TrainModel, ValidateModel
-from yolo.utils.bounding_box_utils import Anc2Box, Vec2Box
+from yolo.data.loader import StreamDataLoader
+from yolo.model.builder import YOLO
+from yolo.tasks.detection.postprocess import Anc2Box, Vec2Box
+from yolo.training.solver import InferenceModel, TrainModel, ValidateModel
 
 
 @pytest.fixture

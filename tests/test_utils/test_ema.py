@@ -10,7 +10,7 @@ from lightning.pytorch.callbacks import Callback
 from torch.utils.data import DataLoader
 
 from tests.conftest import DummyModule, DummyModuleWithVal, TinyDataset
-from yolo.utils.model_utils import EMA
+from yolo.training.callbacks import EMA
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 

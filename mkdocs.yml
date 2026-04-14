@@ -74,6 +74,7 @@ nav:
     - Quick Start: 0_get_start/0_quick_start.md
     - Introduction: 0_get_start/1_introduction.md
     - Installation: 0_get_start/2_installations.md
+    - Project Structure: 0_get_start/3_project_structure.md
   - Tutorials:
     - All In One: 1_tutorials/0_allIn1.md
     - Setup Config: 1_tutorials/1_setup.md
@@ -89,17 +90,13 @@ nav:
     - Loss Function: 3_custom/2_loss.md
     - Custom Task: 3_custom/3_task.md
   - Deploy:
-    - Deploy Model: 4_deploy/1_deploy.md
-    - ONNX: 4_deploy/2_onnx.md
-    - TensorRT: 4_deploy/3_tensorrt.md
-  - Features:
-    - Small Object: 5_features/0_small_object.md
-    - Version Convert: 5_features/1_version_convert.md
-    - IPython: 5_features/2_IPython.md
+    - Inference & Deployment: 4_deploy/1_deploy.md
+  - HOWTO: HOWTO.md
   - API Reference:
-    - Solver & Optimizer: 6_function_docs/0_solver.md
-    - Tools: 6_function_docs/1_tools.md
-    - Module: 6_function_docs/2_module.md
-    - Config: 6_function_docs/3_config.md
-    - Dataloader: 6_function_docs/4_dataloader.md
+    - Model: 6_function_docs/0_model.md
+    - Data: 6_function_docs/1_data.md
+    - Training: 6_function_docs/2_training.md
+    - Detection: 6_function_docs/3_detection.md
+    - Config: 6_function_docs/4_config.md
+    - Utilities: 6_function_docs/5_utils.md
   - Contributing: CONTRIBUTING.md

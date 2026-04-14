@@ -7,9 +7,9 @@ from lightning import LightningModule, Trainer
 from torch.utils.data import Dataset
 
 from yolo import Anc2Box, Config, Vec2Box, create_converter, create_model
-from yolo.model.yolo import YOLO
-from yolo.tools.data_loader import StreamDataLoader, create_dataloader
-from yolo.tools.dataset_preparation import prepare_dataset
+from yolo.data.loader import StreamDataLoader, create_dataloader
+from yolo.data.preparation import prepare_dataset
+from yolo.model.builder import YOLO
 from yolo.utils.logging_utils import set_seed, setup
 
 

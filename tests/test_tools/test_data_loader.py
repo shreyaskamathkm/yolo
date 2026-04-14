@@ -3,7 +3,7 @@ from pathlib import Path
 from torch.utils.data import DataLoader
 
 from yolo.config.config import Config
-from yolo.tools.data_loader import StreamDataLoader, create_dataloader
+from yolo.data.loader import StreamDataLoader, create_dataloader
 
 
 def test_create_dataloader_cache(train_cfg: Config):

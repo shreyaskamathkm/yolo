@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import numpy as np
 import torch
 
-from yolo.tools.data_conversion import discretize_categories
+from yolo.utils.format_converters import discretize_categories
 from yolo.utils.logger import logger
 
 

@@ -35,7 +35,7 @@ To get started using YOLOv9's developer mode, clone this repository and run:
 
 ```shell
 git clone git@github.com:shreyaskamathkm/yolo.git
-cd YOLO
+cd yolo
 make setup
 ```
 

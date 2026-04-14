@@ -2,8 +2,8 @@ from PIL import Image
 from torch import tensor
 
 from yolo.config.config import Config
-from yolo.model.yolo import YOLO
-from yolo.tools.drawer import draw_bboxes, draw_model
+from yolo.model.builder import YOLO
+from yolo.utils.drawer import draw_bboxes, draw_model
 
 
 def test_draw_model_by_config(train_cfg: Config):

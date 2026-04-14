@@ -42,17 +42,17 @@ jobs:
 
       - name: Run Validation
         run: |
-          python yolo/lazy.py task=validation use_wandb=False dataset=mock
-          python yolo/lazy.py task=validation use_wandb=False dataset=mock model=v9-s
-          python yolo/lazy.py task=validation use_wandb=False dataset=mock name=AnyNameYouWant
+          python -m yolo task=validation use_wandb=False dataset=mock
+          python -m yolo task=validation use_wandb=False dataset=mock model=v9-s
+          python -m yolo task=validation use_wandb=False dataset=mock name=AnyNameYouWant
 
       - name: Run Inference
         run: |
-          python yolo/lazy.py task=inference use_wandb=False
-          python yolo/lazy.py task=inference use_wandb=False model=v7
-          python yolo/lazy.py task=inference use_wandb=False +quiet=True
-          python yolo/lazy.py task=inference use_wandb=False name=AnyNameYouWant
-          python yolo/lazy.py task=inference use_wandb=False image_size=\[480,640]
-          python yolo/lazy.py task=inference use_wandb=False task.nms.min_confidence=0.1
-          python yolo/lazy.py task=inference use_wandb=False task.fast_inference=deploy
-          python yolo/lazy.py task=inference use_wandb=False task.data.source=tests/data/images/val
+          python -m yolo task=inference use_wandb=False
+          python -m yolo task=inference use_wandb=False model=v7
+          python -m yolo task=inference use_wandb=False +quiet=True
+          python -m yolo task=inference use_wandb=False name=AnyNameYouWant
+          python -m yolo task=inference use_wandb=False image_size=\[480,640]
+          python -m yolo task=inference use_wandb=False task.nms.min_confidence=0.1
+          python -m yolo task=inference use_wandb=False task.fast_inference=deploy
+          python -m yolo task=inference use_wandb=False task.data.source=tests/data/images/val

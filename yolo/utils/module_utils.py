@@ -12,9 +12,9 @@ def get_layer_map():
     ensuring they are relevant neural network layers.
     """
     layer_map = {}
-    from yolo.model import module
+    from yolo.model import blocks
 
-    for name, obj in inspect.getmembers(module, inspect.isclass):
+    for name, obj in inspect.getmembers(blocks, inspect.isclass):
         if issubclass(obj, nn.Module) and obj is not nn.Module:
             layer_map[name] = obj
     return layer_map

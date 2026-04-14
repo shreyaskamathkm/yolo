@@ -114,7 +114,7 @@ dmypy.json
 runs
 /data
 /datasets
-*/data
+tests/data
 
 # Datasets and model checkpoints
 *.ckpt
@@ -148,3 +148,4 @@ node_modules/
 
 # Not ignore image for demo
 !demo/images/*/*.png
+Model-arch

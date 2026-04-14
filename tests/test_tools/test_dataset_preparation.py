@@ -3,7 +3,7 @@ import shutil
 from pathlib import Path
 
 from yolo.config.config import Config
-from yolo.tools.dataset_preparation import prepare_dataset, prepare_weight
+from yolo.data.preparation import prepare_dataset, prepare_weight
 
 
 def test_prepare_dataset(train_cfg: Config):

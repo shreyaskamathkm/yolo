@@ -1,3 +1,0 @@
-# Small Object Detection
-
-[WIP]
