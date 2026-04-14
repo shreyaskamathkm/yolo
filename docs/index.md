@@ -13,4 +13,4 @@ YOLO (You Only Look Once) is a state-of-the-art, real-time object detection syst
 
 ## License
 
-YOLO is provided under the MIT License. See the [LICENSE](https://github.com/MultimediaTechLab/YOLO/blob/main/LICENSE) file for full license text.
+YOLO is provided under the MIT License. See the [LICENSE](https://github.com/shreyaskamathkm/yolo/blob/main/LICENSE) file for full license text.

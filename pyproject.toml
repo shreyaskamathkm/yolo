@@ -1,10 +1,14 @@
 [project]
 name = "yolo"
-version = "0.1.4"
+version = "0.1.5"
 description = "Official Implementation of YOLO"
 authors = [
-    { name = "Hao-Tang, Tsui", email = "henrytsui000@gmail.com" },
+  {name = "Shreyas Kamath", email = "shreyaskamathkm@gmail.com"}
 ]
+maintainers = [
+  {name = "Shreyas Kamath", email = "shreyaskamathkm@gmail.com"}
+]
+
 readme = "README.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.10"
@@ -65,7 +69,7 @@ requires = [
 yolo = "yolo.lazy:main"
 
 [tool.bumpversion]
-current_version = "0.1.4"
+current_version = "0.1.5"
 commit = true
 tag = false
 message = "chore: bump version {current_version} -> {new_version}"
@@ -74,3 +78,7 @@ message = "chore: bump version {current_version} -> {new_version}"
 filename = "pyproject.toml"
 search = 'version = "{current_version}"'
 replace = 'version = "{new_version}"'
+
+[project.urls]
+Homepage = "https://github.com/shreyaskamathkm/yolo"
+"Original Work" = "https://github.com/MultimediaTechLab/YOLO"

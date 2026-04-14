@@ -33,10 +33,10 @@ This guide will help you set up YOLO on your machine. We recommend starting with
 Clone the repository:
 
 ```bash
-git clone https://github.com/WongKinYiu/YOLO.git
+git clone https://github.com/shreyaskamathkm/yolo.git
 ```
 
-Or download directly via the [ZIP archive](https://github.com/WongKinYiu/YOLO/archive/refs/heads/main.zip).
+Or download directly via the [ZIP archive](https://github.com/shreyaskamathkm/yolo/archive/refs/heads/main.zip).
 
 Install all dependencies:
 
@@ -58,7 +58,7 @@ For ONNX or TensorRT, see [ONNX](../4_deploy/2_onnx.md) and [TensorRT](../4_depl
     Due to the `yolo` name already being occupied on PyPI, we provide installation via GitHub. Ensure `git` and `pip` are available in your shell.
 
 ```bash
-pip install git+https://github.com/WongKinYiu/YOLO.git
+pip install git+https://github.com/shreyaskamathkm/yolo.git
 ```
 
 ## Docker

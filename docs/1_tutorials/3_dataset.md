@@ -42,7 +42,7 @@ class_list: ['Person', 'Bicycle', 'Car', ...]
 
 auto_download:
   images:
-    base_url: https://github.com/MultimediaTechLab/YOLO/releases/download/v1.0-alpha/
+    base_url: https://github.com/shreyaskamathkm/yolo/releases/download/v1-mock-data/
     train:
       file_name: mock_train
       file_num: 5
@@ -50,7 +50,7 @@ auto_download:
       file_name: mock_val
       file_num: 5
   annotations:
-    base_url: https://github.com/MultimediaTechLab/YOLO/releases/download/v1.0-alpha/
+    base_url: https://github.com/shreyaskamathkm/yolo/releases/download/v1-mock-data/
     annotations:
       file_name: mock_annotations
 ```

@@ -1,4 +1,4 @@
-# YOLO: Official Implementation of YOLOv9, YOLOv7, YOLO-RD
+# YOLO: YOLOv9, YOLOv7, YOLO-RD
 
 [![Documentation](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://shreyaskamathkm.github.io/yolo/)
 ![GitHub License](https://img.shields.io/github/license/shreyaskamathkm/yolo)
@@ -11,7 +11,7 @@
 >
 > Use of this code is at your own risk and discretion. It is advisable to consult with the project owner before deploying or integrating into any critical systems. -->
 
-Welcome to the official implementation of YOLOv7[^1] and YOLOv9[^2], YOLO-RD[^3]. This repository will contains the complete codebase, pre-trained models, and detailed instructions for training and deploying YOLOv9.
+This repository contains an implementation of YOLOv7[^1], YOLOv9[^2], and YOLO-RD[^3], forked and extended from [MultimediaTechLab/YOLO](https://github.com/MultimediaTechLab/YOLO/tree/main/yolo). It includes the complete codebase, pre-trained models, and detailed instructions for training and deploying YOLO models.
 
 ## TL;DR
 
@@ -104,6 +104,10 @@ python yolo/lazy.py task=validation dataset=toy
 ## Contributing
 
 Contributions to the YOLO project are welcome! See [CONTRIBUTING](docs/CONTRIBUTING.md) for guidelines on how to contribute.
+
+## Acknowledgments
+
+This project is a fork of [MultimediaTechLab/YOLO](https://github.com/MultimediaTechLab/YOLO/tree/main/yolo). Many thanks to the MultimediaTechLab team for their work on the original implementation, which served as the foundation for this repository.
 
 ## Citations
 

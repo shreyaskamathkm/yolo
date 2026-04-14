@@ -83,8 +83,6 @@ nav:
     - Inference: 1_tutorials/5_inference.md
   - Model Zoo:
     - Object Detection: 2_model_zoo/0_object_detection.md
-    - Segmentation: 2_model_zoo/1_segmentation.md
-    - Classification: 2_model_zoo/2_classification.md
   - Custom YOLO:
     - Model: 3_custom/0_model.md
     - Data Augmentation: 3_custom/1_data_augment.md
