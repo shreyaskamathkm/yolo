@@ -4,7 +4,7 @@ import torch
 from torch import Tensor
 
 from yolo.config.config import Config
-from yolo.model.yolo import create_model
+from yolo.model.builder import create_model
 from yolo.utils.logger import logger
 
 

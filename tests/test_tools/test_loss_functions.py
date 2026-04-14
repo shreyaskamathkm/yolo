@@ -5,9 +5,9 @@ import torch
 from hydra import compose, initialize
 
 from yolo.config.config import Config
-from yolo.model.yolo import create_model
-from yolo.tools.loss_functions import DualLoss, create_loss_function
-from yolo.utils.bounding_box_utils import Vec2Box
+from yolo.model.builder import create_model
+from yolo.tasks.detection.loss import DualLoss, create_loss_function
+from yolo.tasks.detection.postprocess import Vec2Box
 
 
 @pytest.fixture

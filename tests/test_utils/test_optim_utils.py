@@ -8,7 +8,7 @@ import torch.nn as nn
 from torch.optim import SGD
 from torch.optim.lr_scheduler import CosineAnnealingLR
 
-from yolo.utils.optim_utils import (
+from yolo.training.optim import (
     LinearWarmupPolicy,
     WarmupBatchScheduler,
     YOLOWarmupPolicy,

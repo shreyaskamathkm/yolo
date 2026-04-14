@@ -6,24 +6,24 @@ To facilitate easy customization of the YOLO model, we've structured the codebas
 
 ```shell
 # Train
-python yolo/lazy.py task=train dataset=dev use_wandb=True
+python -m yolo task=train dataset=dev use_wandb=True
 
 # Validate
-python yolo/lazy.py task=validation
-python yolo/lazy.py task=validation model=v9-s
-python yolo/lazy.py task=validation dataset=toy
-python yolo/lazy.py task=validation dataset=toy name=validation
+python -m yolo task=validation
+python -m yolo task=validation model=v9-s
+python -m yolo task=validation dataset=toy
+python -m yolo task=validation dataset=toy name=validation
 
 # Inference
-python yolo/lazy.py task=inference
-python yolo/lazy.py task=inference device=cpu
-python yolo/lazy.py task=inference +quiet=True
-python yolo/lazy.py task=inference name=AnyNameYouWant
-python yolo/lazy.py task=inference image_size=\[480,640]
-python yolo/lazy.py task=inference task.nms.min_confidence=0.1
-python yolo/lazy.py task=inference task.fast_inference=deploy
-python yolo/lazy.py task=inference task.fast_inference=onnx device=cpu
-python yolo/lazy.py task=inference task.data.source=data/toy/images/train
+python -m yolo task=inference
+python -m yolo task=inference device=cpu
+python -m yolo task=inference +quiet=True
+python -m yolo task=inference name=AnyNameYouWant
+python -m yolo task=inference image_size=\[480,640]
+python -m yolo task=inference task.nms.min_confidence=0.1
+python -m yolo task=inference task.fast_inference=deploy
+python -m yolo task=inference task.fast_inference=onnx device=cpu
+python -m yolo task=inference task.data.source=data/toy/images/train
 ```
 
 ## Custom Model Architecture
@@ -33,7 +33,7 @@ You can change the model architecture simply by modifying the YAML configuration
 1. **Modify Architecture in Config:**
 
    Navigate to your model's configuration file (typically formate like `yolo/config/model/v9-c.yaml`).
-   - Adjust the architecture settings under the `architecture` section. Ensure that every module you reference exists in `module.py`, or refer to the next section on how to add new modules.
+   - Adjust the architecture settings under the `architecture` section. Ensure that every module you reference exists in one of the `model/blocks/` files, or refer to the next section on how to add new modules.
 
     ```yaml
     model:
@@ -63,7 +63,9 @@ To add or modify a block in the model:
 
 1. **Create a New Module:**
 
-   Define a new class in `module.py` that inherits from `nn.Module`.
+   Define a new class in the appropriate `model/blocks/` file that inherits from `nn.Module`.
+
+   Place basic building blocks (Conv, Pool) in `model/blocks/basic.py`, backbone blocks in `model/blocks/backbone.py`, neck blocks in `model/blocks/neck.py`, and YOLOR implicit blocks in `model/blocks/implicit.py`.
 
    The constructor should accept `in_channels` as a parameter. Make sure to calculate `out_channels` based on your model's requirements or configure it through the YAML file using `args`.
 
@@ -115,26 +117,30 @@ Custom transformations should be designed to accept an image and its bounding bo
 
 
 - **Utils**
-    - **bbox_utils**
-        - `class` Anchor2Box: transform predicted anchor to bounding box
-        - `class` Matcher: given prediction and groudtruth, find the groundtruth for each prediction
-        - `func` calculate_iou: calculate iou for given two list of bbox
-        - `func` transform_bbox: transform bbox from {xywh, xyxy, xcycwh} to {xywh, xyxy, xcycwh}
-        - `func` generate_anchors: given image size, make the anchor point for the given size
+    - **tasks/detection/postprocess** (bounding box utilities)
+        - `class` Vec2Box: transform predicted vectors to bounding boxes
+        - `class` Anc2Box: transform predicted anchors to bounding boxes (v7-style)
+        - `class` BoxMatcher: given predictions and ground truth, assign best matching GT box
+        - `func` calculate_iou: calculate IoU for two lists of bboxes
+        - `func` transform_bbox: transform bbox between formats (xywh, xyxy, xycwh)
+        - `func` generate_anchors: given image size, generate anchor points
+        - `func` bbox_nms: apply NMS to predicted bounding boxes
+        - `func` create_converter: factory that returns Vec2Box or Anc2Box based on model name
+        - `func` to_metrics_format: convert predictions to torchmetrics-compatible format
     - **dataset_utils**
         - `func` locate_label_paths:
         - `func` create_image_metadata:
         - `func` organize_annotations_by_image:
         - `func` scale_segmentation:
     - **logging_utils**
-        - `func` custom_log: custom loguru, overiding the origin logger
+        - `func` custom_log: custom loguru, overriding the origin logger
         - `class` ProgressTracker: A class to handle output for each batch, epoch
         - `func` log_model_structure: give a torch model, print it as a table
-        - `func` validate_log_directory: for given experiemnt, check if the log folder already existed
-    - **model_utils**
+        - `func` validate_log_directory: for given experiment, check if the log folder already exists
+    - **training/callbacks** (EMA and gradient accumulation)
         - `class` EMA: Lightning Callback that maintains an exponential moving average of model weights
         - `class` GradientAccumulation: Lightning Callback that ramps gradient accumulation steps during warmup
-    - **optim_utils**
+    - **training/optim**
         - `func` lerp: linear interpolation between two values
         - `class` LinearWarmupPolicy: uniform LR ramp from 0 → initial_lr over warmup epochs
         - `class` YOLOWarmupPolicy: YOLO-style warmup — bias group drops, other groups rise
@@ -144,35 +150,40 @@ Custom transformations should be designed to accept an image and its bounding bo
     - **module_utils**
         - `func` get_layer_map:
         - `func` auto_pad: given a convolution block, return how many pixel should conv padding
-        - `func` create_activation_function: given a `func` name, return a activation `func`tion
-        - `func` round_up: given number and divider, return a number is mutliplcation of divider
-        - `func` divide_into_chunks: for a given list and n, seperate list to n sub list
-    - **trainer**
-        - `class` Trainer: a class can automatic train the model
-- **Tools**
-    - **converter_json2txt**
-        - `func` discretize_categories: given the dictionary class, turn id from 1: class
-        - `func` process_annotations: handle the whole dataset annotations
-        - `func` process_annotation: handle a annotation(a list of bounding box)
-        - `func` normalize_segmentation: normalize segmentation position to 0~1
-        - `func` convert_annotations: convert json annotations to txt file structure
-    - **data_augment**
-        - `class` AugmentationComposer: Compose a list of data augmentation strategy
-        - `class` VerticalFlip: a custom data augmentation, Random Vertical Flip
-        - `class` Mosaic: a data augmentation strategy, follow YOLOv5
-    - **dataloader**
-        - `class` YoloDataset: a custom dataset for training yolo's model
-        - `class` YoloDataLoader: a dataloader base on torch's dataloader, with custom allocate function
-        - `func` create_dataloader: given a config file, return a YOLO dataloader
-    - **drawer**
-        - `func` draw_bboxes: given a image and list of bbox, draw bbox on the image
-        - `func` draw_model: visualize the given model
-    - **get_dataset**
-        - `func` download_file: for a given link, download the file
-        - `func` unzip_file: unzip the downloaded zip to data/
-        - `func` check_files: check if the dataset file numbers is correct
-        - `func` prepare_dataset: automatic download the dataset and check if it is correct
-    - **loss**
-        - `class` BoxLoss: a Custom Loss for bounding box
-        - `class` YOLOLoss: a implementation of yolov9 loss
-        - `class` DualLoss: a implementation of yolov9 loss with auxiliary detection head
+        - `func` create_activation_function: given a `func` name, return an activation function
+        - `func` round_up: given number and divider, return a number that is a multiple of divider
+        - `func` divide_into_chunks: for a given list and n, separate list into n sub-lists
+    - **training/solver**
+        - `class` BaseModel: base Lightning module wrapping the YOLO model
+        - `class` ValidateModel: adds validation loop (metrics, EMA, val dataloader)
+        - `class` TrainModel: adds training loop, loss, and optimizer configuration
+        - `class` InferenceModel: runs prediction and optionally saves visualized output
+- **Data** (`yolo/data/`)
+    - **data/augmentation**
+        - `class` AugmentationComposer: compose a list of data augmentation strategies
+        - `class` VerticalFlip: random vertical flip augmentation
+        - `class` Mosaic: Mosaic augmentation strategy
+    - **data/dataset**
+        - `class` YoloDataset: custom PyTorch Dataset for YOLO training
+        - `func` collate_fn: batches images and targets for the DataLoader
+    - **data/loader**
+        - `func` create_dataloader: given a config, return a DataLoader or StreamDataLoader
+        - `class` StreamDataLoader: streams images/video from disk, folder, or RTSP for inference
+    - **data/preparation**
+        - `func` prepare_dataset: auto-download and verify the dataset
+        - `func` prepare_weight: download pretrained weights if missing
+- **Tasks** (`yolo/tasks/`)
+    - **tasks/detection/loss**
+        - `class` BCELoss: binary cross-entropy classification loss
+        - `class` BoxLoss: CIoU-based bounding box regression loss
+        - `class` DFLoss: Distribution Focal Loss for anchor distribution
+        - `class` YOLOLoss: combines BCE + Box + DFL losses with target assignment
+        - `class` DualLoss: wraps YOLOLoss for AUX + Main dual-head training
+        - `func` create_loss_function: factory returning a DualLoss instance
+    - **tasks/detection/head**
+        - `class` Detection: single YOLO detection head
+        - `class` IDetection: YOLOv7-style implicit detection head
+        - `class` MultiheadDetection: multi-scale detection head (dual/triple detect)
+    - **utils/format_converters** (format conversion utilities)
+        - `func` discretize_categories: remap COCO category IDs to contiguous indices
+        - `func` convert_annotations: convert JSON annotations to YOLO txt format

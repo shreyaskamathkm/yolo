@@ -2,7 +2,7 @@ import torch
 from PIL import Image
 from torchvision.transforms import functional as TF
 
-from yolo.tools.data_augmentation import (
+from yolo.data.augmentation import (
     AugmentationComposer,
     HorizontalFlip,
     Mosaic,

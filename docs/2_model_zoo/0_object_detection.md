@@ -14,6 +14,7 @@
 ## YOLOv9
 
 The trained models were utilized from the original repository [Link](https://github.com/MultimediaTechLab/YOLO/releases)
+
 | Model | State | Test Size | $AP^{val}$ | $AP_{50}^{val}$ | $AP_{75}^{val}$ | Param. | FLOPs |
 |---|---|---|---|---|---|---|---|
 | [YOLOv9-T](https://github.com/shreyaskamathkm/yolo/releases/download/v1-trained_models/v9-t.pt) | 🔧 | 640 | — | — | — | — | — |

@@ -3,8 +3,8 @@
 Thank you for your interest in contributing to this project! We value your contributions and want to make the process as easy and enjoyable as possible. Below you will find the guidelines for contributing.
 
 ## Quick Links
-- [Main README](../README.md)
-- [License](../LICENSE)
+- [Main README](https://github.com/shreyaskamathkm/yolo#readme)
+- [License](https://github.com/shreyaskamathkm/yolo/blob/main/LICENSE)
 - [Issue Tracker](https://github.com/shreyaskamathkm/yolo/issues)
 - [Pull Requests](https://github.com/shreyaskamathkm/yolo/pulls)
 

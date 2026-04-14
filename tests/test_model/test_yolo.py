@@ -4,7 +4,7 @@ from hydra import compose, initialize
 from omegaconf import OmegaConf
 
 from yolo.config.config import Config
-from yolo.model.yolo import YOLO, create_model
+from yolo.model.builder import YOLO, create_model
 
 config_path = ".."
 config_name = "test"

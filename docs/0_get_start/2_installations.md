@@ -50,7 +50,7 @@ This creates a `.venv` virtual environment (if one doesn't exist), installs all 
 make setup VENV=myenv PYTHON=python3.11
 ```
 
-For ONNX or TensorRT, see [ONNX](../4_deploy/2_onnx.md) and [TensorRT](../4_deploy/3_tensorrt.md).
+For ONNX or TensorRT setup, see [Inference & Deployment](../4_deploy/1_deploy.md).
 
 ## PyPI (pip install)
 
@@ -64,8 +64,8 @@ pip install git+https://github.com/shreyaskamathkm/yolo.git
 ## Docker
 
 ```bash
-docker pull henrytsui000/yolo
-docker run --gpus all -it henrytsui000/yolo
+docker pull shreyaskamathkm/yolo
+docker run --gpus all -it shreyaskamathkm/yolo
 ```
 
 Requires the [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html).

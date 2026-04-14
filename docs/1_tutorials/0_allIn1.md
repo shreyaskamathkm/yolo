@@ -1,11 +1,11 @@
 # All In One
 
-`yolo.lazy` is a packaged entry point that includes **training**, **validation**, and **inference** tasks. The following sections break down each operation and show how to import and call these functions directly.
+`yolo` is a packaged entry point that includes **training**, **validation**, and **inference** tasks. The following sections break down each operation and show how to import and call these functions directly.
 
 ## Train Model
 
 ```bash
-python yolo/lazy.py task=train
+python -m yolo task=train
 ```
 
 Common arguments:
@@ -14,11 +14,11 @@ Common arguments:
 |---|---|---|
 | `name` | `str` | Experiment name |
 | `model` | `str` | Model backbone: `v9-c`, `v7`, `v9-e`, etc. |
-| `cpu_num` | `int` | Number of CPU workers (`num_workers`) |
+| `task.data.dataloader_workers` | `int` | Number of CPU workers (`num_workers`) |
 | `out_path` | `Path` | Output path for models and logs |
 | `weight` | `Path \| bool \| None` | Pre-trained weights path. `False` = scratch, `None` = default |
 | `use_wandb` | `bool` | Enable Weights & Biases tracking |
-| `use_TensorBoard` | `bool` | Enable TensorBoard logging |
+| `use_tensorboard` | `bool` | Enable TensorBoard logging |
 | `image_size` | `int \| [int, int]` | Input image size |
 | `+quiet` | `bool` | Disable all output (optional) |
 | `task.epoch` | `int` | Total training epochs |
@@ -27,7 +27,7 @@ Common arguments:
 ### Example
 
 ```bash
-python yolo/lazy.py task=train task.data.batch_size=12 image_size=1280
+python -m yolo task=train task.data.batch_size=12 image_size=1280
 ```
 
 ### Multi-GPU Training with DDP
@@ -36,12 +36,12 @@ For multi-GPU training using Distributed Data Parallel (DDP), replace `python` w
 
 === "bash"
     ```bash
-    torchrun --nproc_per_node=2 yolo/lazy.py task=train device=[0,1]
+    torchrun --nproc_per_node=2 -m yolo task=train device=[0,1]
     ```
 
 === "zsh"
     ```bash
-    torchrun --nproc_per_node=2 yolo/lazy.py task=train device=\[0,1\]
+    torchrun --nproc_per_node=2 -m yolo task=train device=\[0,1\]
     ```
 
 ### Training on a Custom Dataset
@@ -105,7 +105,7 @@ Common arguments:
 
 === "git-cloned"
     ```bash
-    python yolo/lazy.py task=validation task.nms.min_iou=0.9
+    python -m yolo task=validation task.nms.min_iou=0.9
     ```
 
 === "PyPI"
@@ -131,7 +131,7 @@ Common arguments:
 
 === "git-cloned"
     ```bash
-    python yolo/lazy.py model=v9-m task.nms.min_confidence=0.1 task.data.source=0 task.fast_inference=onnx
+    python -m yolo model=v9-m task.nms.min_confidence=0.1 task.data.source=0 task.fast_inference=onnx
     ```
 
 === "PyPI"

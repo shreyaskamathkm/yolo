@@ -1,6 +1,6 @@
 import torch
 
-from yolo.model.module import SPPELAN, ADown, CBLinear, Conv, Pool
+from yolo.model.blocks import SPPELAN, ADown, CBLinear, Conv, Pool
 
 STRIDE = 2
 KERNEL_SIZE = 3

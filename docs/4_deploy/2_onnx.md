@@ -1,3 +1,0 @@
-# Compile to ONNX
-
-[WIP]

@@ -5,7 +5,7 @@ from torch import allclose, float32, isclose, tensor
 
 from yolo import Config, NMSConfig, create_model
 from yolo.config.config import AnchorConfig
-from yolo.utils.bounding_box_utils import (
+from yolo.tasks.detection.postprocess import (
     Anc2Box,
     Vec2Box,
     bbox_nms,
