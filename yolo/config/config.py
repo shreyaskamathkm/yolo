@@ -46,6 +46,7 @@ class Config:
     use_wandb: bool
     use_tensorboard: bool
 
+    task_type: str
     weight: Optional[str]
 
 

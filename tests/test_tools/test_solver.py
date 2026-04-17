@@ -8,7 +8,9 @@ from yolo.config.config import Config
 from yolo.data.loader import StreamDataLoader
 from yolo.model.builder import YOLO
 from yolo.tasks.detection.postprocess import Anc2Box, Vec2Box
-from yolo.training.solver import InferenceModel, TrainModel, ValidateModel
+from yolo.tasks.detection.solver import DetectionInferenceModel as InferenceModel
+from yolo.tasks.detection.solver import DetectionTrainModel as TrainModel
+from yolo.tasks.detection.solver import DetectionValidateModel as ValidateModel
 
 
 @pytest.fixture

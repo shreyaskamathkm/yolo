@@ -9,6 +9,7 @@ from yolo.data.loader import create_dataloader
 from yolo.model.builder import create_model
 from yolo.tasks.detection.loss import create_loss_function
 from yolo.tasks.detection.postprocess import create_converter, to_metrics_format
+from yolo.tasks.registry import register
 from yolo.training.optim import create_optimizer, create_scheduler
 from yolo.utils.drawer import draw_bboxes
 from yolo.utils.model_utils import PostProcess
@@ -23,7 +24,8 @@ class BaseModel(LightningModule):
         return self.model(x)
 
 
-class ValidateModel(BaseModel):
+@register("detection", "validation")
+class DetectionValidateModel(BaseModel):
     def __init__(self, cfg: Config):
         super().__init__(cfg)
         self.cfg = cfg
@@ -67,7 +69,8 @@ class ValidateModel(BaseModel):
         self.metric.reset()
 
 
-class TrainModel(ValidateModel):
+@register("detection", "train")
+class DetectionTrainModel(DetectionValidateModel):
     def __init__(self, cfg: Config):
         super().__init__(cfg)
         self.cfg = cfg
@@ -127,7 +130,8 @@ class TrainModel(ValidateModel):
         return {"optimizer": optimizer, "lr_scheduler": {"scheduler": scheduler, "interval": "step"}}
 
 
-class InferenceModel(BaseModel):
+@register("detection", "inference")
+class DetectionInferenceModel(BaseModel):
     def __init__(self, cfg: Config):
         super().__init__(cfg)
         self.cfg = cfg

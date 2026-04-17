@@ -1,8 +1,9 @@
 import hydra
 from lightning import Trainer
 
+import yolo.tasks.detection.solver  # register detection solvers
 from yolo.config.config import Config
-from yolo.training.solver import InferenceModel, TrainModel, ValidateModel
+from yolo.tasks.registry import SOLVERS, TRAINER_METHODS
 from yolo.utils.logging_utils import setup
 
 
@@ -27,15 +28,12 @@ def main(cfg: Config):
         default_root_dir=save_path,
     )
 
-    if cfg.task.task == "train":
-        model = TrainModel(cfg)
-        trainer.fit(model)
-    if cfg.task.task == "validation":
-        model = ValidateModel(cfg)
-        trainer.validate(model)
-    if cfg.task.task == "inference":
-        model = InferenceModel(cfg)
-        trainer.predict(model)
+    key = (cfg.task_type, cfg.task.task)
+    if key not in SOLVERS:
+        raise ValueError(f"No solver registered for task_type={cfg.task_type!r}, mode={cfg.task.task!r}")
+
+    model = SOLVERS[key](cfg)
+    getattr(trainer, TRAINER_METHODS[cfg.task.task])(model)
 
 
 if __name__ == "__main__":

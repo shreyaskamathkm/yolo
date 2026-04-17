@@ -7,7 +7,7 @@ from yolo.tasks.detection.postprocess import (
     bbox_nms,
     create_converter,
 )
-from yolo.training.solver import TrainModel
+from yolo.tasks.detection.solver import DetectionTrainModel as TrainModel
 from yolo.utils.deploy_utils import FastModelLoader
 from yolo.utils.drawer import draw_bboxes
 from yolo.utils.logging_utils import (

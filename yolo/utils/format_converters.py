@@ -1,5 +1,4 @@
 # Merged from: tools/format_converters.py + tools/data_conversion.py
-# TODO Phase 2: update solver import path (yolo.tools.solver -> yolo.training.solver)
 import json
 from pathlib import Path
 from typing import Dict, List, Optional
