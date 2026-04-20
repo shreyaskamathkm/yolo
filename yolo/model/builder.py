@@ -1,6 +1,6 @@
-from collections import OrderedDict, namedtuple
+from collections import OrderedDict
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Dict, List, Optional, Union
 
 import torch
 from omegaconf import ListConfig, OmegaConf
@@ -10,37 +10,6 @@ from yolo.config.config import ModelConfig, YOLOLayer
 from yolo.data.preparation import prepare_weight
 from yolo.utils.logger import logger
 from yolo.utils.module_utils import get_layer_map
-
-
-class YOLOOutputSchema(tuple):
-    """Marker class for YOLO outputs to allow clean type checking."""
-
-    pass
-
-
-class YOLOOutput:
-    """
-    Library-wide schema for YOLO outputs.
-    Ensures TorchScript compatibility (as a tuple) while allowing
-    attribute and dictionary-style access.
-    """
-
-    @staticmethod
-    def create(tags: List[str]):
-        # Create the underlying NamedTuple
-        Base = namedtuple("YOLOOutput", tags)
-
-        # Subclass it to add dictionary-like access and our Schema marker
-        class Schema(Base, YOLOOutputSchema):
-            def __getitem__(self, key):
-                if isinstance(key, str):
-                    return getattr(self, key)
-                return super().__getitem__(key)
-
-            def get(self, key, default=None):
-                return getattr(self, key, default)
-
-        return Schema
 
 
 class YOLO(nn.Module):
@@ -58,9 +27,7 @@ class YOLO(nn.Module):
         self.layer_map = get_layer_map()  # Get the map Dict[str: Module]
         self.model: List[YOLOLayer] = nn.ModuleList()
         self.reg_max = getattr(model_cfg.anchor, "reg_max", 16)
-        self.output_tags = []
         self.build_model(model_cfg.model)
-        self.OutputSchema = YOLOOutput.create(self.output_tags)
 
     def build_model(self, model_arch: Dict[str, List[Dict[str, Dict[str, Dict]]]]):
         self.layer_index = {}
@@ -96,9 +63,6 @@ class YOLO(nn.Module):
                         raise ValueError(f"Duplicate tag '{layer_info['tags']}' found.")
                     self.layer_index[layer.tags] = layer_idx
 
-                if layer.output:
-                    self.output_tags.append(layer.tags)
-
                 out_channels = self.get_out_channels(layer_type, layer_args, output_dim, source)
                 output_dim.append(out_channels)
                 setattr(layer, "out_c", out_channels)
@@ -122,8 +86,8 @@ class YOLO(nn.Module):
             if layer.output:
                 output[layer.tags] = x
                 if layer.tags == shortcut:
-                    return self.OutputSchema(**output)
-        return self.OutputSchema(**output)
+                    return output
+        return output
 
     def get_out_channels(self, layer_type: str, layer_args: dict, output_dim: list, source: Union[int, list]):
         if hasattr(layer_args, "out_channels"):

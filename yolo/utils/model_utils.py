@@ -11,7 +11,6 @@ from yolo.config.config import (
     IDX_TO_ID,
     NMSConfig,
 )
-from yolo.model.builder import YOLOOutputSchema
 from yolo.tasks.detection.postprocess import Anc2Box, Vec2Box, bbox_nms, transform_bbox
 from yolo.utils.logger import logger
 
@@ -57,8 +56,6 @@ class PostProcess:
 
         if isinstance(data, torch.Tensor):
             return data.to(device)
-        if isinstance(data, YOLOOutputSchema):  # Clean SWE check!
-            return type(data)(*[self._to_device(x, device) for x in data])
         if isinstance(data, (list, tuple)):
             return [self._to_device(x, device) for x in data]
         if isinstance(data, dict):
