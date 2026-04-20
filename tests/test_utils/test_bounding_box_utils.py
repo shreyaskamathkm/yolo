@@ -127,7 +127,9 @@ def test_anc2box_autoanchor(inference_v7_cfg: Config):
     model = create_model(inference_v7_cfg.model, weight_path=None).to(device)
     anchor_cfg: AnchorConfig = inference_v7_cfg.model.anchor.copy()
     del anchor_cfg.strides
-    anc2box = Anc2Box(model, anchor_cfg, inference_v7_cfg.image_size, device)
+    anc2box = Anc2Box(
+        model, anchor_cfg, inference_v7_cfg.image_size, device, class_num=inference_v7_cfg.dataset.class_num
+    )
     assert anc2box.strides == [8, 16, 32]
 
     anc2box.update((320, 640))

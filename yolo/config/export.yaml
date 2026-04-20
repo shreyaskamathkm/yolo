@@ -1,0 +1,8 @@
+defaults:
+  - task: export
+  - dataset: coco
+  - model: v9-c
+  - _self_
+
+weight: weights/v9-c.pt
+image_size: [640, 640]

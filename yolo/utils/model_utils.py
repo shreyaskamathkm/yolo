@@ -11,6 +11,7 @@ from yolo.config.config import (
     IDX_TO_ID,
     NMSConfig,
 )
+from yolo.model.builder import YOLOOutputSchema
 from yolo.tasks.detection.postprocess import Anc2Box, Vec2Box, bbox_nms, transform_bbox
 from yolo.utils.logger import logger
 
@@ -52,11 +53,29 @@ class PostProcess:
         self.converter = converter
         self.nms = nms_cfg
 
+    def _to_device(self, data, device):
+
+        if isinstance(data, torch.Tensor):
+            return data.to(device)
+        if isinstance(data, YOLOOutputSchema):  # Clean SWE check!
+            return type(data)(*[self._to_device(x, device) for x in data])
+        if isinstance(data, (list, tuple)):
+            return [self._to_device(x, device) for x in data]
+        if isinstance(data, dict):
+            return {k: self._to_device(v, device) for k, v in data.items()}
+        return data
+
     def __call__(
         self, predict, rev_tensor: Optional[Tensor] = None, image_size: Optional[List[int]] = None
     ) -> List[Tensor]:
         if image_size is not None:
             self.converter.update(image_size)
+
+        device = self.converter.device
+        predict = self._to_device(predict, device)
+        if rev_tensor is not None:
+            rev_tensor = rev_tensor.to(device)
+
         prediction = self.converter(predict["Main"])
         pred_class, _, pred_bbox = prediction[:3]
         pred_conf = prediction[3] if len(prediction) == 4 else None

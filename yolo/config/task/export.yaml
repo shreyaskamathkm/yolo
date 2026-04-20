@@ -1,0 +1,6 @@
+task: export
+formats:
+  - onnx
+  - torch
+  - trt
+output_dir: exports/

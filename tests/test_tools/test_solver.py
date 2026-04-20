@@ -46,7 +46,11 @@ def modelv7_tester(inference_v7_cfg: Config):
 
 
 def test_model_tester_initialization(solver: Trainer, model_tester: InferenceModel):
-    assert isinstance(model_tester.model, YOLO)
+    assert isinstance(model_tester, InferenceModel)
+    # Late initialization (setup) is required for components like post_process
+    model_tester.setup("predict")
+    assert hasattr(model_tester, "model")
+    assert hasattr(model_tester, "post_process")
     assert hasattr(solver, "predict")
 
 

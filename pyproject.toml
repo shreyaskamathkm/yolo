@@ -46,6 +46,7 @@ docs = [
     "mkdocstrings[python]",
     "pymdown-extensions",
 ]
+export=["onnx", "onnxscript", "onnxruntime","torch-tensorrt"]
 
 [tool.setuptools.packages.find]
 where = ["."]

@@ -6,6 +6,7 @@ from torchmetrics.detection import MeanAveragePrecision
 
 from yolo.config.config import Config
 from yolo.data.loader import create_dataloader
+from yolo.deploy import create_inference_backend
 from yolo.model.builder import create_model
 from yolo.tasks.detection.loss import create_loss_function
 from yolo.tasks.detection.postprocess import create_converter, to_metrics_format
@@ -131,16 +132,24 @@ class DetectionTrainModel(DetectionValidateModel):
 
 
 @register("detection", "inference")
-class DetectionInferenceModel(BaseModel):
+class DetectionInferenceModel(LightningModule):
     def __init__(self, cfg: Config):
-        super().__init__(cfg)
+        super().__init__()
         self.cfg = cfg
-        # TODO: Add FastModel
+        self.model = create_inference_backend(cfg.task.backend, self.cfg.weight, str(self.device), self.cfg)
         self.predict_loader = create_dataloader(cfg.task.data, cfg.dataset, cfg.task.task)
+
+    def forward(self, x):
+        return self.model(x)
 
     def setup(self, stage):
         self.vec2box = create_converter(
-            self.cfg.model.name, self.model, self.cfg.model.anchor, self.cfg.image_size, self.device
+            self.cfg.model.name,
+            self.model,
+            self.cfg.model.anchor,
+            self.cfg.image_size,
+            self.device,
+            class_num=self.cfg.dataset.class_num,
         )
         self.post_process = PostProcess(self.vec2box, self.cfg.task.nms)
 
@@ -149,7 +158,8 @@ class DetectionInferenceModel(BaseModel):
 
     def predict_step(self, batch, batch_idx):
         images, rev_tensor, origin_frame = batch
-        predicts = self.post_process(self(images), rev_tensor=rev_tensor)
+        results = self(images)
+        predicts = self.post_process(results, rev_tensor=rev_tensor)
         img = draw_bboxes(origin_frame, predicts, idx2label=self.cfg.dataset.class_list)
         if getattr(self.predict_loader, "is_stream", None):
             fps = self._display_stream(img)

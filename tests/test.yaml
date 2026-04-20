@@ -10,3 +10,6 @@ defaults:
   - dataset: mock
   - model: v9-s
   - general
+
+task:
+  backend: torch

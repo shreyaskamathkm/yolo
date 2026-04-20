@@ -1,5 +1,6 @@
 from yolo.config.config import Config, NMSConfig
 from yolo.data.loader import AugmentationComposer, create_dataloader
+from yolo.deploy import ModelExporter, create_inference_backend
 from yolo.model.builder import create_model
 from yolo.tasks.detection.postprocess import (
     Anc2Box,
@@ -8,7 +9,6 @@ from yolo.tasks.detection.postprocess import (
     create_converter,
 )
 from yolo.tasks.detection.solver import DetectionTrainModel as TrainModel
-from yolo.utils.deploy_utils import FastModelLoader
 from yolo.utils.drawer import draw_bboxes
 from yolo.utils.logging_utils import (
     ImageLogger,
@@ -31,7 +31,8 @@ __all__ = [
     "AugmentationComposer",
     "ImageLogger",
     "create_dataloader",
-    "FastModelLoader",
+    "create_inference_backend",
+    "ModelExporter",
     "TrainModel",
     "PostProcess",
 ]

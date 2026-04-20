@@ -391,7 +391,7 @@ class Vec2Box:
 
 
 class Anc2Box:
-    def __init__(self, model: YOLO, anchor_cfg: AnchorConfig, image_size, device):
+    def __init__(self, model: YOLO, anchor_cfg: AnchorConfig, image_size, device, class_num: int):
         self.device = device
 
         if hasattr(anchor_cfg, "strides"):
@@ -405,7 +405,7 @@ class Anc2Box:
         self.anchor_grids = self.generate_anchors(image_size)
         self.anchor_scale = tensor(anchor_cfg.anchor, device=device).view(self.head_num, 1, -1, 1, 1, 2)
         self.anchor_num = self.anchor_scale.size(2)
-        self.class_num = model.num_classes
+        self.class_num = class_num
 
     def create_auto_anchor(self, model: YOLO, image_size):
         W, H = image_size
@@ -455,6 +455,8 @@ def create_converter(model_version: str = "v9-c", *args, **kwargs) -> Union[Anc2
     if "v7" in model_version:  # check model if v7
         converter = Anc2Box(*args, **kwargs)
     else:
+        # Vec2Box doesn't need class_num
+        kwargs.pop("class_num", None)
         converter = Vec2Box(*args, **kwargs)
     return converter
 

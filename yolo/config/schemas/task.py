@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Optional
+from typing import List, Optional
 
 from yolo.config.schemas.data import DataConfig  # noqa: F401
 
@@ -16,7 +16,7 @@ class InferenceConfig:
     task: str
     nms: NMSConfig
     data: DataConfig
-    fast_inference: Optional[None]
+    backend: str
     save_predict: bool
 
 
@@ -25,3 +25,10 @@ class ValidationConfig:
     task: str
     nms: NMSConfig
     data: DataConfig
+
+
+@dataclass
+class ExportConfig:
+    task: str
+    formats: List[str]
+    output_dir: str

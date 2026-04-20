@@ -1,0 +1,15 @@
+ihydra:
+  run:
+    dir: runs/${task.task}/${name}
+
+name: inference
+
+defaults:
+  - task: inference
+  - model: v9-c
+  - dataset: coco
+  - general
+  - _self_
+
+weight: exports/v9-c.onnx
+task.backend: onnx
