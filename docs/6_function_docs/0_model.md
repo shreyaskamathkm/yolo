@@ -1,10 +1,12 @@
 # Model
 
-## Model Builder
+## Builder
 
 ::: yolo.model.builder
     options:
-      members: true
+      members:
+        - create_model
+        - YOLO
       undoc-members: true
       show-inheritance: true
 

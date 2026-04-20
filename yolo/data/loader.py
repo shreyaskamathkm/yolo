@@ -1,7 +1,8 @@
+import threading
 from pathlib import Path
-from queue import Empty, Queue
+from queue import Empty, Full, Queue
 from threading import Event, Thread
-from typing import Generator, List
+from typing import Any, Generator, List, Optional, Tuple
 
 import cv2
 import filetype
@@ -16,143 +17,209 @@ from yolo.data.augmentation import AugmentationComposer
 from yolo.data.dataset import YoloDataset, collate_fn
 from yolo.data.preparation import prepare_dataset
 
+# Sentinel to signal end-of-source cleanly (avoids timeout-based StopIteration)
+_STREAM_DONE = object()
+_STREAM_SOURCE = ("rtmp://", "rtsp://", "http://", "https://")
+
 
 class StreamDataLoader:
+    """A threaded data loader for streaming and batch processing of various input sources.
+
+    This loader supports images, videos, directories, and live streams (RTSP, RTMP, Webcam).
+    It uses background threads to pre-process frames and maintain a queue for inference.
+
+    Attributes:
+        source (Union[str, int]): The input source (path or stream ID).
+        is_stream (bool): Whether the source is a live stream or video.
+        total_frames (int): Total number of frames in the source (proxied for streams).
+    """
+
     def __init__(self, data_cfg: DataConfig):
+        """Initializes the StreamDataLoader.
+
+        Args:
+            data_cfg (DataConfig): Configuration containing source, image size, etc.
+        """
+
         self.source = data_cfg.source
         self.running = True
         source_str = str(self.source)
+
         self.is_stream = (
             isinstance(self.source, int)
-            or source_str.lower().startswith(("rtmp://", "rtsp://", "http://", "https://"))
+            or source_str.lower().startswith(_STREAM_SOURCE)
             or (Path(source_str).is_file() and filetype.is_video(source_str))
         )
-        self.path = (
-            Path(source_str)
-            if not isinstance(self.source, int) and (Path(source_str).is_file() or Path(source_str).is_dir())
-            else self.source
-        )
+
+        if not isinstance(self.source, int):
+            p = Path(source_str)
+            self.path: Any = p if (p.is_file() or p.is_dir()) else self.source
+        else:
+            self.path = self.source
 
         self.transform = AugmentationComposer([], data_cfg.image_size)
         self.stop_event = Event()
-        self.total_frames = self._count_total_frames()
 
         if self.is_stream:
             self.cap = cv2.VideoCapture(self.source if isinstance(self.source, int) else source_str)
             if not self.cap.isOpened():
                 raise ValueError(f"Error opening source: {self.source}")
+            self.total_frames = self._count_stream_frames(source_str)
+            self.queue: Queue = Queue(maxsize=8)
+            self._stream_thread = Thread(target=self._stream_worker, daemon=True)
+            self._stream_thread.start()
             print(f"✅ Streaming from: {self.source}")
         else:
-            self.source = Path(self.source)
-            self.queue = Queue()
-            self.thread = Thread(target=self.load_source)
-            self.thread.daemon = True
-            self.thread.start()
+            self.source = Path(source_str)
+            self.total_frames = self._count_folder_or_file_frames(self.source)
+            self.queue = Queue(maxsize=32)
+            self._load_thread = Thread(target=self.load_source, daemon=True)
+            self._load_thread.start()
             print(f"✅ Loading from: {self.source} ({self.total_frames} frames found)")
 
-    def _count_total_frames(self):
+    def _count_stream_frames(self, source_str: str) -> int:
+        """Count frames for a stream source. Only opens a file once."""
+        if isinstance(self.source, int):
+            return 1_000_000  # Live webcam / RTSP: placeholder
+        p = Path(source_str)
+        if p.is_file():
+            cap = cv2.VideoCapture(source_str)
+            count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+            cap.release()
+            return count if count > 0 else 1_000_000
+        return 1_000_000
+
+    def _count_folder_or_file_frames(self, source: Path) -> int:
+        """Count frames for a folder or single image/video file."""
         count = 0
-        source_path = Path(str(self.source))
-        if source_path.is_dir():
-            for p in source_path.rglob("*"):
+        if source.is_dir():
+            for p in sorted(source.rglob("*")):  # sorted for determinism
                 if not p.is_file():
                     continue
-                if filetype.is_image(p):
+                if filetype.is_image(str(p)):
                     count += 1
-                elif filetype.is_video(p):
+                elif filetype.is_video(str(p)):
                     cap = cv2.VideoCapture(str(p))
                     c = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-                    count += c if c > 0 else 0
                     cap.release()
-        elif self.is_stream:
-            if not isinstance(self.source, int) and Path(self.source).is_file():
-                cap = cv2.VideoCapture(str(self.source))
-                count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-                cap.release()
-            else:
-                count = 1000000  # Placeholder for live streams
-        elif filetype.is_image(source_path):
+                    count += max(c, 0)
+        elif filetype.is_image(str(source)):
             count = 1
+        elif filetype.is_video(str(source)):
+            cap = cv2.VideoCapture(str(source))
+            count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+            cap.release()
         return count
 
-    def load_source(self):
-        if self.source.is_dir():  # image folder
-            self.load_folder(self.source)
-        elif filetype.is_video(self.source):  # Video file
-            self.load_video_file(self.source)
-        elif filetype.is_image(self.source):  # Single image
-            self.process_image(self.source)
+    def _stream_worker(self):
+        """Reads frames from a live stream in a background thread."""
+        try:
+            while self.running and not self.stop_event.is_set():
+                ret, frame = self.cap.read()
+                if not ret:
+                    break
+                processed = self._process_frame(frame, path=self.path)
+                try:
+                    self.queue.put(processed, timeout=1)
+                except Full:
+                    continue
+        finally:
+            self.queue.put(_STREAM_DONE)
+            self.cap.release()
 
-    def load_folder(self, folder):
-        folder_path = Path(folder)
-        for file_path in folder_path.rglob("*"):
+    def load_source(self):
+        """Entry point for the file/folder background loader thread."""
+        try:
+            source = self.source
+            if source.is_dir():
+                self._load_folder(source)
+            elif filetype.is_video(str(source)):
+                self._load_video_file(source)
+            elif filetype.is_image(str(source)):
+                self._process_and_enqueue_image(source)
+        finally:
+            self.queue.put(_STREAM_DONE)
+
+    def _load_folder(self, folder: Path):
+        for file_path in sorted(folder.rglob("*")):
             if self.stop_event.is_set():
                 break
             if not file_path.is_file():
                 continue
-            if filetype.is_image(file_path):
-                self.process_image(file_path)
-            elif filetype.is_video(file_path):
-                self.load_video_file(file_path)
+            if filetype.is_image(str(file_path)):
+                self._process_and_enqueue_image(file_path)
+            elif filetype.is_video(str(file_path)):
+                self._load_video_file(file_path)
 
-    def process_image(self, image_path):
+    def _process_and_enqueue_image(self, image_path: Path):
         image = Image.open(image_path).convert("RGB")
-        if image is None:
-            raise ValueError(f"Error loading image: {image_path}")
-        self.process_frame(image, path=image_path)
+        processed = self._process_frame(image, path=image_path)
+        self.queue.put(processed)
 
-    def load_video_file(self, video_path):
+    def _load_video_file(self, video_path: Path):
         cap = cv2.VideoCapture(str(video_path))
-        while self.running:
-            ret, frame = cap.read()
-            if not ret:
-                break
-            self.process_frame(frame, path=video_path)
-        cap.release()
+        try:
+            while self.running and not self.stop_event.is_set():
+                ret, frame = cap.read()
+                if not ret:
+                    break
+                processed = self._process_frame(frame, path=video_path)
+                self.queue.put(processed)
+        finally:
+            cap.release()
 
-    def process_frame(self, frame, path=None):
+    def _process_frame(self, frame, path: Optional[Path] = None) -> Tuple[Tensor, Tensor, Image.Image, Optional[Path]]:
+        """Convert a raw frame to a processed tensor tuple. Thread-safe: no shared state."""
         if isinstance(frame, np.ndarray):
-            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            frame = Image.fromarray(frame)
+            frame = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+
         origin_frame = frame
-        frame, _, rev_tensor = self.transform(frame, torch.zeros(0, 5))
-        frame = frame[None]
-        rev_tensor = rev_tensor[None]
-        if not self.is_stream:
-            self.queue.put((frame, rev_tensor, origin_frame, path))
-        else:
-            self.current_frame = (frame, rev_tensor, origin_frame, path)
+        processed, _, rev_tensor = self.transform(frame, torch.zeros(0, 5))
+        return processed[None], rev_tensor[None], origin_frame, path
 
     def __iter__(self) -> Generator[Tensor, None, None]:
         return self
 
-    def __next__(self) -> Tensor:
-        if self.is_stream:
-            ret, frame = self.cap.read()
-            if not ret:
-                self.stop()
-                raise StopIteration
-            self.process_frame(frame, path=self.path)
-            return self.current_frame
-        else:
-            try:
-                frame = self.queue.get(timeout=1)
-                return frame
-            except Empty:
-                raise StopIteration
+    def __next__(self) -> Tuple[Tensor, Tensor, Image.Image, Optional[Path]]:
+        try:
+            item = self.queue.get(timeout=5)
+        except Empty:
+            raise StopIteration
+
+        if item is _STREAM_DONE:
+            raise StopIteration
+
+        return item
 
     def stop(self):
         self.running = False
-        if self.is_stream:
-            self.cap.release()
-        else:
-            self.thread.join(timeout=1)
+        self.stop_event.set()
 
-    def __len__(self):
+        if self.is_stream:
+            self._stream_thread.join(timeout=5)
+        else:
+            self._load_thread.join(timeout=5)
+
+    def __len__(self) -> int:
         return self.total_frames
 
 
 def create_dataloader(data_cfg: DataConfig, dataset_cfg: DatasetConfig, task: str = "train"):
+    """Factory function to create the appropriate data loader based on the task.
+
+    For inference tasks, it returns a `StreamDataLoader`. For training and validation,
+    it returns a standard PyTorch `DataLoader` wrapping the `YoloDataset`.
+
+    Args:
+        data_cfg (DataConfig): Data-specific configuration (batch size, source, etc.).
+        dataset_cfg (DatasetConfig): Dataset-specific configuration (classes, paths).
+        task (str, optional): The current task ('train', 'validation', or 'inference').
+            Defaults to "train".
+
+    Returns:
+        Union[StreamDataLoader, DataLoader]: The requested data loader instance.
+    """
+
     if task == "inference":
         return StreamDataLoader(data_cfg)
 

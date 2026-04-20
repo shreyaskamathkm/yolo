@@ -43,15 +43,27 @@ python -m yolo task=train dataset=AYamlFilePath model=v9-m
 
 yolo task=train dataset=AYamlFilePath model=v9-m  # if installed via pip
 ```
+## Model Exporting
 
-## Inference & Deployment
+You can export models to specialized formats for faster inference:
+
+```bash
+yolo --config-name export weight=weights/v9-c.pt formats=[onnx,trt]
+```
+
+
+## Inference
 
 Inference is the default task of `yolo`. More details at [Inference Tutorials](../1_tutorials/5_inference.md).
 
 ```bash
-python -m yolo task.data.source=AnySource
+# Basic inference
+yolo task.data.source=image.jpg
 
-yolo task.data.source=AnySource  # if installed via pip
+# Using optimized backends (onnx, trt, torch)
+yolo task.backend=onnx weight=model.onnx task.data.source=video.mp4
 ```
 
-Enable fast inference modes by adding `task.fast_inference={onnx, trt, deploy}`. See [Inference & Deployment](../4_deploy/1_deploy.md) for setup instructions.
+
+
+See [Inference & Deployment](../4_deploy/1_deploy.md) for more setup instructions.

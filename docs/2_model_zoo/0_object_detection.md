@@ -17,7 +17,7 @@ The trained models were utilized from the original repository [Link](https://git
 
 | Model | State | Test Size | $AP^{val}$ | $AP_{50}^{val}$ | $AP_{75}^{val}$ | Param. | FLOPs |
 |---|---|---|---|---|---|---|---|
-| [YOLOv9-T](https://github.com/shreyaskamathkm/yolo/releases/download/v1-trained_models/v9-t.pt) | 🔧 | 640 | — | — | — | — | — |
+| [YOLOv9-T](https://github.com/shreyaskamathkm/yolo/releases/download/v1-trained_models/v9-t.pt) | ✅ | 640 | - | - | — | **2.44M** | **5.04G** |
 | [YOLOv9-S](https://github.com/shreyaskamathkm/yolo/releases/download/v1-trained_models/v9-s.pt) | ✅ | 640 | **46.8%** | **63.4%** | **50.7%** | **7.1M** | **26.4G** |
 | [YOLOv9-M](https://github.com/shreyaskamathkm/yolo/releases/download/v1-trained_models/v9-m.pt) | ✅ | 640 | **51.4%** | **68.1%** | **56.1%** | **20.0M** | **76.3G** |
 | [YOLOv9-C](https://github.com/shreyaskamathkm/yolo/releases/download/v1-trained_models/v9-c.pt) | ✅ | 640 | **53.0%** | **70.2%** | **57.8%** | **25.3M** | **102.1G** |

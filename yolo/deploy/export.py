@@ -20,12 +20,36 @@ _EXTENSIONS = {
 
 
 class ModelExporter:
+    """Manages the conversion of YOLO models to various deployment formats.
+
+    This class handles model initialization, stripping of auxiliary heads,
+    and delegation to specific backend exporters (ONNX, TensorRT, Torch).
+
+    Attributes:
+        cfg (Config): System configuration containing model and task details.
+        model (YOLO): The constructed and evaluated PyTorch model.
+    """
+
     def __init__(self, cfg: Config):
+        """Initializes the ModelExporter with the provided configuration.
+
+        Args:
+            cfg (Config): Configuration object containing model version, weights path,
+                and dataset information.
+        """
         self.cfg = cfg
         self.cfg.model.model.auxiliary = {}
         self.model = create_model(cfg.model, class_num=cfg.dataset.class_num, weight_path=cfg.weight).eval()
 
     def __call__(self) -> None:
+        """Executes the export process for all requested formats.
+
+        Reads the formats specified in the configuration, determines the appropriate
+        backend for each, and saves the exported model to the output directory.
+
+        Raises:
+            ValueError: If an unsupported export format is requested.
+        """
         stem = Path(self.cfg.weight).stem
         output_dir = Path(self.cfg.task.output_dir)
         output_dir.mkdir(parents=True, exist_ok=True)

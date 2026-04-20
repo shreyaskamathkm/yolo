@@ -7,10 +7,10 @@ This guide will help you set up YOLO on your machine. We recommend starting with
 === "Linux"
 
     === "CUDA"
-        PyTorch: 1.12+
+        PyTorch: 2.2+
 
     === "CPU"
-        PyTorch: 1.12+
+        PyTorch: 2.2+
 
 === "MacOS"
 
@@ -19,14 +19,6 @@ This guide will help you set up YOLO on your machine. We recommend starting with
 
     === "CPU"
         PyTorch: 2.2+
-
-=== "Windows"
-
-    === "CUDA"
-        [WIP]
-
-    === "CPU"
-        [WIP]
 
 ## Git & GitHub
 

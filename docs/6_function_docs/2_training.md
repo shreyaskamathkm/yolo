@@ -4,22 +4,32 @@
 
 ::: yolo.tasks.detection.solver
     options:
-      members: true
+      members:
+        - DetectionTrainModel
+        - DetectionValidateModel
+        - DetectionInferenceModel
       undoc-members: true
       show-inheritance: true
+
 
 ## Optimizer & Scheduler
 
 ::: yolo.training.optim
     options:
-      members: true
+      members:
+        - create_optimizer
+        - create_scheduler
+        - WarmupBatchScheduler
       undoc-members: true
       show-inheritance: true
+
 
 ## Callbacks
 
 ::: yolo.training.callbacks
     options:
-      members: true
+      members:
+        - EMA
+        - GradientAccumulation
       undoc-members: true
       show-inheritance: true

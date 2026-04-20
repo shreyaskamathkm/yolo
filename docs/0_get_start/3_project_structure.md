@@ -11,22 +11,28 @@ yolo/
 │   │   ├── model.py            # AnchorConfig, ModelConfig, YOLOLayer
 │   │   ├── data.py             # DatasetConfig, DataConfig, DownloadOptions
 │   │   ├── training.py         # OptimizerConfig, SchedulerConfig, TrainConfig, EMAConfig, LossConfig
-│   │   └── task.py             # NMSConfig, InferenceConfig, ValidationConfig
+│   │   └── task.py             # NMSConfig, InferenceConfig, ValidationConfig, ExportConfig
 │   ├── config.py               # Assembles Config from schemas; re-exports all dataclasses
 │   └── [yaml files]            # Hydra config groups: model/, task/, dataset/, general/
+├── deploy/                     # Optimized inference and exporting
+│   ├── backends/               # Format-specific executors (ONNX, TRT, Torch)
+│   ├── export.py               # ModelExporter implementation
+│   ├── factory.py              # create_inference_backend factory
+│   └── protocol.py             # InferenceBackend typing protocol
 ├── model/
 │   ├── builder.py              # YOLO nn.Module and create_model()
 │   └── blocks/
-│       ├── __init__.py         # Re-exports all block classes (used by get_layer_map)
+│       ├── __init__.py         # Re-exports all block classes
 │       ├── basic.py            # Conv, Pool, Concat, UpSample
 │       ├── backbone.py         # RepConv, Bottleneck, RepNCSP, ELAN, AConv, ADown
 │       ├── neck.py             # SPPELAN, SPPCSPConv, CBLinear, CBFuse
-│       └── implicit.py         # ImplicitA, ImplicitM, DConv, Anchor2Vec, RepNCSPELAND
+│       └── implicit.py         # ImplicitA, ImplicitM, DConv, RepNCSPELAND
 ├── tasks/
 │   ├── detection/
 │   │   ├── head.py             # Detection, IDetection, MultiheadDetection
 │   │   ├── loss.py             # BCELoss, BoxLoss, DFLoss, YOLOLoss, DualLoss
-│   │   └── postprocess.py      # Vec2Box, Anc2Box, BoxMatcher, bbox_nms, create_converter
+│   │   ├── postprocess.py      # Vec2Box, Anc2Box, BoxMatcher, bbox_nms, create_converter
+│   │   └── solver.py           # DetectionTrainModel, DetectionValidateModel, DetectionInferenceModel
 │   ├── segmentation/
 │   │   └── head.py             # Segmentation, MultiheadSegmentation
 │   └── classification/
@@ -37,13 +43,11 @@ yolo/
 │   ├── augmentation.py         # AugmentationComposer and transform classes
 │   └── preparation.py          # prepare_dataset, prepare_weight
 ├── training/
-│   ├── solver.py               # BaseModel, ValidateModel, TrainModel, InferenceModel
 │   ├── optim.py                # lerp, warmup policies, WarmupBatchScheduler, create_optimizer/scheduler
 │   └── callbacks.py            # EMA, GradientAccumulation Lightning callbacks
 └── utils/
     ├── logger.py               # Loguru logger instance
     ├── logging_utils.py        # Progress bars, WandB/TensorBoard setup, ImageLogger
-    ├── deploy_utils.py         # FastModelLoader (ONNX, TensorRT, deploy mode)
     ├── drawer.py               # draw_bboxes, draw_model
     ├── model_utils.py          # PostProcess, distributed utilities (collect_prediction, get_device)
     ├── module_utils.py         # get_layer_map, auto_pad, round_up

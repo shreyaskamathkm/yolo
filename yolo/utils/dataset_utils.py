@@ -57,7 +57,9 @@ def create_image_metadata(labels_path: str) -> Tuple[Dict[str, List], Dict[str, 
         return annotations_index, image_info_dict
 
 
-def organize_annotations_by_image(data: Dict[str, Any], id_to_idx: Optional[Dict[int, int]]):
+def organize_annotations_by_image(
+    data: Dict[str, Any], id_to_idx: Optional[Dict[int, int]]
+) -> Dict[int, List[Dict[str, Any]]]:
     """
     Use image index to lookup every annotations
     Args:

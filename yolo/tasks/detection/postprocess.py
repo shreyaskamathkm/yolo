@@ -12,7 +12,20 @@ from yolo.model.builder import YOLO
 from yolo.utils.logger import logger
 
 
-def calculate_iou(bbox1, bbox2, metrics="iou") -> Tensor:
+def calculate_iou(bbox1: Tensor, bbox2: Tensor, metrics: str = "iou") -> Tensor:
+    """Calculates the Intersection over Union (IoU) or its variants (DIoU, CIoU).
+
+    Supports both single boxes and batches of boxes.
+
+    Args:
+        bbox1 (Tensor): First set of boxes in [x1, y1, x2, y2] format.
+        bbox2 (Tensor): Second set of boxes in [x1, y1, x2, y2] format.
+        metrics (str, optional): The IoU variant to compute ('iou', 'diou', 'ciou').
+            Defaults to "iou".
+
+    Returns:
+        Tensor: Computed IoU scores.
+    """
     metrics = metrics.lower()
     EPS = 1e-7
     dtype = bbox1.dtype
@@ -25,7 +38,7 @@ def calculate_iou(bbox1, bbox2, metrics="iou") -> Tensor:
         bbox2 = bbox2.unsqueeze(0)  # (Bx4) -> (1xBx4)
     elif bbox1.ndim == 3 and bbox2.ndim == 3:
         bbox1 = bbox1.unsqueeze(2)  # (BZxAx4) -> (BZxAx1x4)
-        bbox2 = bbox2.unsqueeze(1)  # (BZxBx4) -> (BZx1xBx4)
+        bbox2 = bbox2.unsqueeze(1)  # (BZx1xBx4)
 
     # Calculate intersection coordinates
     xmin_inter = torch.max(bbox1[..., 0], bbox2[..., 0])
@@ -76,7 +89,17 @@ def calculate_iou(bbox1, bbox2, metrics="iou") -> Tensor:
     return ciou.to(dtype)
 
 
-def transform_bbox(bbox: Tensor, indicator="xywh -> xyxy"):
+def transform_bbox(bbox: Tensor, indicator="xywh -> xyxy") -> Tensor:
+    """Converts bounding box formats.
+
+    Args:
+        bbox (Tensor): Input bounding boxes.
+        indicator (str, optional): Conversion format (e.g., 'xywh -> xyxy').
+            Supported formats: 'xyxy', 'xywh', 'xycwh'. Defaults to "xywh -> xyxy".
+
+    Returns:
+        Tensor: Converted bounding boxes.
+    """
     data_type = bbox.dtype
     in_type, out_type = indicator.replace(" ", "").split("->")
 
@@ -142,7 +165,22 @@ def generate_anchors(image_size: List[int], strides: List[int]) -> Tuple[Tensor,
 
 
 class BoxMatcher:
+    """Matches predicted boxes with ground-truth boxes during training.
+
+    Implements the target assignment logic, typically using a combination
+    of classification scores and IoU similarity.
+    """
+
     def __init__(self, cfg: MatcherConfig, class_num: int, vec2box, reg_max: int) -> None:
+        """Initializes the BoxMatcher.
+
+        Args:
+            cfg (MatcherConfig): Matcher-specific configuration (factors, topk, etc.).
+            class_num (int): Number of classes.
+            vec2box: The box converter instance.
+            reg_max (int): Maximum regression distance.
+        """
+
         self.class_num = class_num
         self.vec2box = vec2box
         self.reg_max = reg_max
@@ -337,7 +375,22 @@ class BoxMatcher:
 
 
 class Vec2Box:
+    """Converts vector-based model predictions (YOLOv9) into bounding boxes.
+
+    Handles anchor grid generation, scaling, and the transformation from
+    LTRB (Left-Top-Right-Bottom) offsets to absolute xyxy coordinates.
+    """
+
     def __init__(self, model: YOLO, anchor_cfg: AnchorConfig, image_size, device):
+        """Initializes the Vec2Box converter.
+
+        Args:
+            model (YOLO): The model instance (used for stride detection).
+            anchor_cfg (AnchorConfig): Anchor configuration.
+            image_size: Current input image size.
+            device: Device to store anchor grids on.
+        """
+
         self.device = device
 
         if hasattr(anchor_cfg, "strides"):
@@ -391,7 +444,23 @@ class Vec2Box:
 
 
 class Anc2Box:
+    """Converts anchor-based model predictions (YOLOv7) into bounding boxes.
+
+    Handles the transformation from anchor-relative offsets to absolute
+    xyxy coordinates using pre-defined anchor boxes.
+    """
+
     def __init__(self, model: YOLO, anchor_cfg: AnchorConfig, image_size, device, class_num: int):
+        """Initializes the Anc2Box converter.
+
+        Args:
+            model (YOLO): The model instance.
+            anchor_cfg (AnchorConfig): Anchor configuration (contains base anchors).
+            image_size: Current input image size.
+            device: Device to store anchor grids on.
+            class_num (int): Number of classes.
+        """
+
         self.device = device
 
         if hasattr(anchor_cfg, "strides"):
@@ -452,6 +521,19 @@ class Anc2Box:
 
 
 def create_converter(model_version: str = "v9-c", *args, **kwargs) -> Union[Anc2Box, Vec2Box]:
+    """Factory function to create a box converter (Anc2Box or Vec2Box).
+
+    Automatically selects the appropriate converter based on the model version.
+
+    Args:
+        model_version (str): The model version string (e.g., 'v7', 'v9-c').
+        *args: Positional arguments for the converter.
+        **kwargs: Keyword arguments for the converter.
+
+    Returns:
+        Union[Anc2Box, Vec2Box]: The initialized box converter.
+    """
+
     if "v7" in model_version:  # check model if v7
         converter = Anc2Box(*args, **kwargs)
     else:
@@ -462,6 +544,20 @@ def create_converter(model_version: str = "v9-c", *args, **kwargs) -> Union[Anc2
 
 
 def bbox_nms(cls_dist: Tensor, bbox: Tensor, nms_cfg: NMSConfig, confidence: Optional[Tensor] = None):
+    """Applies Non-Maximum Suppression (NMS) to predicted bounding boxes.
+
+    Filters boxes by confidence threshold and then applies batched NMS to remove
+    overlapping boxes of the same class.
+
+    Args:
+        cls_dist (Tensor): Class probabilities.
+        bbox (Tensor): Bounding boxes in [x1, y1, x2, y2] format.
+        nms_cfg (NMSConfig): NMS configuration (min_confidence, min_iou, max_bbox).
+        confidence (Optional[Tensor], optional): Optional confidence score to weight the classes.
+
+    Returns:
+        List[Tensor]: Filtered predictions for each image in the batch.
+    """
     cls_dist = cls_dist.sigmoid() * (1 if confidence is None else confidence)
 
     batch_idx, valid_grid, valid_cls = torch.where(cls_dist > nms_cfg.min_confidence)

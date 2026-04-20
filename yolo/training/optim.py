@@ -89,12 +89,12 @@ class YOLOWarmupPolicy(WarmupLRPolicy):
 class WarmupBatchScheduler(_LRScheduler):
     """Batch-level LR and momentum scheduler with epoch-aware warmup.
 
-    Wraps an epoch-level ``scheduler`` and linearly interpolates LR
-    across batches within each epoch.  Momentum is also interpolated during
-    warmup epochs.
+    Wraps an epoch-level scheduler and linearly interpolates the learning rate
+    across batches within each epoch. It also handles the initial momentum
+    warmup phase.
 
-    Must be called with ``interval="step"`` in Lightning so that
-    ``scheduler.step()`` fires once per optimizer step.
+    Note:
+        In Lightning, this should be used with `interval="step"`.
     """
 
     def __init__(
@@ -108,6 +108,19 @@ class WarmupBatchScheduler(_LRScheduler):
         end_momentum: float = 0.937,
         last_epoch: int = -1,
     ):
+        """Initializes the WarmupBatchScheduler.
+
+        Args:
+            optimizer (Optimizer): The wrapped optimizer.
+            scheduler (_LRScheduler): The epoch-level scheduler (e.g., CosineAnnealingLR).
+            steps_per_epoch (int): Total training batches in one epoch.
+            warmup_epochs (int, optional): Number of warmup epochs. Defaults to 3.
+            warmup_policy (Optional[WarmupLRPolicy], optional): Warmup curve strategy.
+            start_momentum (float, optional): Initial momentum. Defaults to 0.8.
+            end_momentum (float, optional): Target momentum after warmup. Defaults to 0.937.
+            last_epoch (int, optional): The index of the last epoch. Defaults to -1.
+        """
+
         self.scheduler = scheduler
         self.steps_per_epoch = max(1, int(steps_per_epoch))
         self.warmup_epochs = int(warmup_epochs)
@@ -199,11 +212,19 @@ class WarmupBatchScheduler(_LRScheduler):
 
 
 def create_optimizer(model: YOLO, optim_cfg: OptimizerConfig) -> Optimizer:
-    """Create an optimizer for the given model parameters based on the configuration.
+    """Factory function to build the optimizer.
+
+    Separates model parameters into groups (bias, normalization, convolution)
+    to apply specific optimization settings (e.g., no weight decay on bias).
+
+    Args:
+        model (YOLO): The model to optimize.
+        optim_cfg (OptimizerConfig): Optimizer configuration.
 
     Returns:
-        An instance of the optimizer configured according to the provided settings.
+        Optimizer: The initialized PyTorch optimizer.
     """
+
     optimizer_class: Type[Optimizer] = getattr(torch.optim, optim_cfg.type)
 
     bias_params = [p for name, p in model.named_parameters() if "bias" in name]
@@ -226,11 +247,18 @@ def create_scheduler(
     steps_per_epoch: Optional[int] = None,
     epochs: Optional[int] = None,
 ) -> _LRScheduler:
-    """Create a learning rate scheduler for the given optimizer based on the configuration.
+    """Factory function to build the learning rate scheduler.
+
+    Args:
+        optimizer (Optimizer): The optimizer to wrap.
+        schedule_cfg (SchedulerConfig): Scheduler and warmup configuration.
+        steps_per_epoch (Optional[int], optional): Steps per epoch for batch-level scheduling.
+        epochs (Optional[int], optional): Total training epochs.
 
     Returns:
-        An instance of the scheduler configured according to the provided settings.
+        _LRScheduler: The initialized scheduler (wrapped in WarmupBatchScheduler).
     """
+
     scheduler_class: Type[_LRScheduler] = getattr(torch.optim.lr_scheduler, schedule_cfg.type)
     epoch_sched = scheduler_class(optimizer, **schedule_cfg.args)
 

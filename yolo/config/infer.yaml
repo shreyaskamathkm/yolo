@@ -9,8 +9,8 @@ hydra:
   run:
     dir: runs/${task.task}/${name}
 
-name: inference_trt
-weight: exports/v9-c.ep
+name: inference_onnx
+weight: exports/v9-c.onnx
 
 task:
-  backend: trt
+  backend: onnx

@@ -31,7 +31,19 @@ class BaseModel(LightningModule):
 
 @register("detection", "validation")
 class DetectionValidateModel(BaseModel):
+    """LightningModule for YOLO detection validation.
+
+    Handles metric calculation (mAP), data loading for validation,
+    and post-processing of model predictions.
+    """
+
     def __init__(self, cfg: Config):
+        """Initializes the validation solver.
+
+        Args:
+            cfg (Config): System configuration.
+        """
+
         super().__init__(cfg)
         self.cfg = cfg
         if self.cfg.task.task == "validation":
@@ -76,7 +88,19 @@ class DetectionValidateModel(BaseModel):
 
 @register("detection", "train")
 class DetectionTrainModel(DetectionValidateModel):
+    """LightningModule for YOLO detection training.
+
+    Extends the validation model to include training loops, loss calculation,
+    and optimizer/scheduler configuration.
+    """
+
     def __init__(self, cfg: Config):
+        """Initializes the training solver.
+
+        Args:
+            cfg (Config): System configuration.
+        """
+
         super().__init__(cfg)
         self.cfg = cfg
         self.train_loader = create_dataloader(self.cfg.task.data, self.cfg.dataset, self.cfg.task.task)
@@ -137,7 +161,19 @@ class DetectionTrainModel(DetectionValidateModel):
 
 @register("detection", "inference")
 class DetectionInferenceModel(LightningModule):
+    """LightningModule for YOLO detection inference.
+
+    Handles high-performance inference using various backends, real-time
+    preview of results, and saving of visualized outputs (images/videos).
+    """
+
     def __init__(self, cfg: Config):
+        """Initializes the inference solver.
+
+        Args:
+            cfg (Config): System configuration.
+        """
+
         super().__init__()
         self.cfg = cfg
         self.model = create_inference_backend(cfg.task.backend, self.cfg.weight, str(self.device), self.cfg)
