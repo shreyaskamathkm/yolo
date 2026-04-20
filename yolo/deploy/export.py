@@ -12,6 +12,12 @@ _EXPORTERS = {
     "trt": TRTBackend,
 }
 
+_EXTENSIONS = {
+    "torch": "pt",
+    "onnx": "onnx",
+    "trt": "trt",
+}
+
 
 class ModelExporter:
     def __init__(self, cfg: Config):
@@ -27,5 +33,6 @@ class ModelExporter:
             backend_cls = _EXPORTERS.get(fmt)
             if backend_cls is None:
                 raise ValueError(f"Unknown export format: {fmt!r}. Choose from: {list(_EXPORTERS)}")
-            output_path = output_dir / f"{stem}.{fmt}"
+            extension = _EXTENSIONS.get(fmt, fmt)
+            output_path = output_dir / f"{stem}.{extension}"
             backend_cls.export(self.model, self.cfg, output_path)

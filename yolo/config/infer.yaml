@@ -1,9 +1,3 @@
-ihydra:
-  run:
-    dir: runs/${task.task}/${name}
-
-name: inference
-
 defaults:
   - task: inference
   - model: v9-c
@@ -11,5 +5,12 @@ defaults:
   - general
   - _self_
 
-weight: exports/v9-c.onnx
-task.backend: onnx
+hydra:
+  run:
+    dir: runs/${task.task}/${name}
+
+name: inference_trt
+weight: exports/v9-c.ep
+
+task:
+  backend: trt

@@ -1,6 +1,10 @@
+import time
 from math import ceil
 from pathlib import Path
 
+import cv2
+import filetype
+import numpy as np
 from lightning import LightningModule
 from torchmetrics.detection import MeanAveragePrecision
 
@@ -138,6 +142,9 @@ class DetectionInferenceModel(LightningModule):
         self.cfg = cfg
         self.model = create_inference_backend(cfg.task.backend, self.cfg.weight, str(self.device), self.cfg)
         self.predict_loader = create_dataloader(cfg.task.data, cfg.dataset, cfg.task.task)
+        self.last_time = time.time()
+        self.video_writer = None
+        self.current_video_path = None
 
     def forward(self, x):
         return self.model(x)
@@ -157,7 +164,7 @@ class DetectionInferenceModel(LightningModule):
         return self.predict_loader
 
     def predict_step(self, batch, batch_idx):
-        images, rev_tensor, origin_frame = batch
+        images, rev_tensor, origin_frame, path = batch
         results = self(images)
         predicts = self.post_process(results, rev_tensor=rev_tensor)
         img = draw_bboxes(origin_frame, predicts, idx2label=self.cfg.dataset.class_list)
@@ -166,10 +173,60 @@ class DetectionInferenceModel(LightningModule):
         else:
             fps = None
         if getattr(self.cfg.task, "save_predict", None):
-            self._save_image(img, batch_idx)
+            self._save_result(img, batch_idx, path)
         return img, fps
 
-    def _save_image(self, img, batch_idx):
-        save_image_path = Path(self.trainer.default_root_dir) / f"frame{batch_idx:03d}.png"
-        img.save(save_image_path)
-        print(f"💾 Saved visualize image at {save_image_path}")
+    def on_predict_epoch_end(self):
+        if self.video_writer is not None:
+            self.video_writer.release()
+            self.video_writer = None
+            print("🎥 Video saved successfully.")
+
+    def _display_stream(self, img):
+        curr_time = time.time()
+        fps = 1 / (curr_time - self.last_time) if curr_time > self.last_time else 0.0
+        self.last_time = curr_time
+        return fps
+
+    def _save_result(self, img, batch_idx, path=None):
+        if isinstance(path, Path) and path.is_file():
+            if filetype.is_image(path):
+                # Save as individual image
+                save_name = f"{path.name}"
+                save_path = Path(self.trainer.default_root_dir) / save_name
+                img.save(save_path)
+                print(f"💾 Saved visualize image at {save_path}")
+            elif filetype.is_video(path):
+                # Process as a video frame
+                self._write_video_frame(img, path)
+        else:
+            # Fallback for live streams or unknown sources
+            if getattr(self.predict_loader, "is_stream", None) or (path is not None and "stream" in str(path).lower()):
+                self._write_video_frame(img, path)
+            else:
+                save_name = f"frame{batch_idx:03d}.png"
+                save_path = Path(self.trainer.default_root_dir) / save_name
+                img.save(save_path)
+                print(f"💾 Saved visualize image at {save_path}")
+
+    def _write_video_frame(self, img, path):
+        if path != self.current_video_path and self.video_writer is not None:
+            self.video_writer.release()
+            self.video_writer = None
+
+        self.current_video_path = path
+        img_numpy = np.array(img)
+        img_bgr = cv2.cvtColor(img_numpy, cv2.COLOR_RGB2BGR)
+        h, w = img_bgr.shape[:2]
+
+        if self.video_writer is None:
+            save_name = f"{path.stem}_out.mp4" if isinstance(path, Path) else "stream_out.mp4"
+            save_path = str(Path(self.trainer.default_root_dir) / save_name)
+            fps = self.predict_loader.cap.get(cv2.CAP_PROP_FPS) if hasattr(self.predict_loader, "cap") else 30
+            if fps <= 0:
+                fps = 30
+            fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+            self.video_writer = cv2.VideoWriter(save_path, fourcc, fps, (w, h))
+            print(f"🎥 Initialized video writer: {save_path} ({w}x{h} @ {fps} FPS)")
+
+        self.video_writer.write(img_bgr)

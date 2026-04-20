@@ -19,6 +19,7 @@ dependencies = [
     "graphviz",
     "hydra-core",
     "lightning",
+    "filetype",
     "loguru",
     "numpy",
     "opencv-python",
