@@ -36,7 +36,6 @@ dependencies = [
 dev = [
     "yolo[docs]",
     "bump-my-version",
-    "gradio",
     "pytest",
     "pytest-cov",
     "pre-commit",

@@ -64,6 +64,10 @@ yolo task.data.source=image.jpg
 yolo task.backend=onnx weight=model.onnx task.data.source=video.mp4
 ```
 
-
-
 See [Inference & Deployment](../4_deploy/1_deploy.md) for more setup instructions.
+
+
+## Example Output using ONNX with Yolov9-c Model
+
+![Inference Result 1](../assets/img_0000.jpg)
+![Inference Result 2](../assets/img_0001.jpg)

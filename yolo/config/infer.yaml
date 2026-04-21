@@ -10,7 +10,7 @@ hydra:
     dir: runs/${task.task}/${name}
 
 name: inference_onnx
-weight: exports/v9-c.onnx
+weight: exports/v9-c/v9-c.onnx
 
 task:
   backend: onnx

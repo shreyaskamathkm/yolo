@@ -2,7 +2,7 @@ task: inference
 
 backend: torch  # onnx, trt, deploy or Empty
 data:
-  source: demo/video/
+  source: demo/images/inference/
   image_size: ${image_size}
   data_augment: {}
 nms:

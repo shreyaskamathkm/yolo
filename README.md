@@ -109,6 +109,14 @@ Contributions to the YOLO project are welcome! See [CONTRIBUTING](docs/CONTRIBUT
 
 This project is a fork of [MultimediaTechLab/YOLO](https://github.com/MultimediaTechLab/YOLO/tree/main/yolo). Many thanks to the MultimediaTechLab team for their work on the original implementation, which served as the foundation for this repository.
 
+## Inference Results
+
+![Inference Result 1](docs/assets/img_0000.jpg)
+![Inference Result 2](docs/assets/img_0001.jpg)
+
+### Images in inference borrowed from
+- Image - [img_0000.jpg] (https://pixabay.com/photos/man-woman-bicycle-bike-air-sky-3861989/)
+- Image - [img_0001.jpg](https://pixabay.com/photos/night-rome-italy-street-urban-7530755/)
 ## Citations
 
 ```

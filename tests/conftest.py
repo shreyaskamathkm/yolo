@@ -121,11 +121,13 @@ def validation_dataloader(validation_cfg: Config):
 
 @pytest.fixture(scope="session")
 def file_stream_data_loader(inference_cfg: Config):
+    inference_cfg.task.data.source = "tests/data/images/train/000000050725.jpg"
     return StreamDataLoader(inference_cfg.task.data)
 
 
 @pytest.fixture(scope="session")
 def file_stream_data_loader_v7(inference_v7_cfg: Config):
+    inference_v7_cfg.task.data.source = "tests/data/images/train/000000050725.jpg"
     return StreamDataLoader(inference_v7_cfg.task.data)
 
 

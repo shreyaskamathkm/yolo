@@ -1,4 +1,4 @@
-from typing import Any, List, Tuple
+from typing import Any, Dict, List, Tuple
 
 import torch
 from torch import nn
@@ -95,13 +95,13 @@ class MultiheadDetection(nn.Module):
     IDetection heads based on the provided configuration.
     """
 
-    def __init__(self, in_channels: List[int], num_classes: int, **head_kwargs):
+    def __init__(self, in_channels: List[int], num_classes: int, **head_kwargs: Dict[str, Any]):
         """Initializes the MultiheadDetection module.
 
         Args:
             in_channels (List[int]): List of input channel counts for each scale.
             num_classes (int): Number of target classes.
-            **head_kwargs: Additional arguments passed to each detection head.
+            **head_kwargs (Dict[str, Any]): Additional arguments passed to each detection head.
         """
         super().__init__()
         DetectionHead = Detection

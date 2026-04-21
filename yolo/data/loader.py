@@ -2,7 +2,7 @@ import threading
 from pathlib import Path
 from queue import Empty, Full, Queue
 from threading import Event, Thread
-from typing import Any, Generator, List, Optional, Tuple
+from typing import Any, Generator, List, Optional, Tuple, Union
 
 import cv2
 import filetype
@@ -204,7 +204,9 @@ class StreamDataLoader:
         return self.total_frames
 
 
-def create_dataloader(data_cfg: DataConfig, dataset_cfg: DatasetConfig, task: str = "train"):
+def create_dataloader(
+    data_cfg: DataConfig, dataset_cfg: DatasetConfig, task: str = "train"
+) -> Union[StreamDataLoader, DataLoader]:
     """Factory function to create the appropriate data loader based on the task.
 
     For inference tasks, it returns a `StreamDataLoader`. For training and validation,

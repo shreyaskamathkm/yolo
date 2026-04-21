@@ -1,5 +1,5 @@
 import math
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import torch
 from einops import rearrange
@@ -171,7 +171,7 @@ class BoxMatcher:
     of classification scores and IoU similarity.
     """
 
-    def __init__(self, cfg: MatcherConfig, class_num: int, vec2box, reg_max: int) -> None:
+    def __init__(self, cfg: MatcherConfig, class_num: int, vec2box: Any, reg_max: int) -> None:
         """Initializes the BoxMatcher.
 
         Args:
@@ -381,7 +381,7 @@ class Vec2Box:
     LTRB (Left-Top-Right-Bottom) offsets to absolute xyxy coordinates.
     """
 
-    def __init__(self, model: YOLO, anchor_cfg: AnchorConfig, image_size, device):
+    def __init__(self, model: YOLO, anchor_cfg: AnchorConfig, image_size: List[int], device: torch.device):
         """Initializes the Vec2Box converter.
 
         Args:
@@ -450,7 +450,9 @@ class Anc2Box:
     xyxy coordinates using pre-defined anchor boxes.
     """
 
-    def __init__(self, model: YOLO, anchor_cfg: AnchorConfig, image_size, device, class_num: int):
+    def __init__(
+        self, model: YOLO, anchor_cfg: AnchorConfig, image_size: List[int], device: torch.device, class_num: int
+    ):
         """Initializes the Anc2Box converter.
 
         Args:
@@ -520,7 +522,7 @@ class Anc2Box:
         return preds_cls, None, preds_box, preds_cnf.sigmoid()
 
 
-def create_converter(model_version: str = "v9-c", *args, **kwargs) -> Union[Anc2Box, Vec2Box]:
+def create_converter(model_version: str = "v9-c", *args: Any, **kwargs: Any) -> Union[Anc2Box, Vec2Box]:
     """Factory function to create a box converter (Anc2Box or Vec2Box).
 
     Automatically selects the appropriate converter based on the model version.
@@ -543,7 +545,7 @@ def create_converter(model_version: str = "v9-c", *args, **kwargs) -> Union[Anc2
     return converter
 
 
-def bbox_nms(cls_dist: Tensor, bbox: Tensor, nms_cfg: NMSConfig, confidence: Optional[Tensor] = None):
+def bbox_nms(cls_dist: Tensor, bbox: Tensor, nms_cfg: NMSConfig, confidence: Optional[Tensor] = None) -> List[Tensor]:
     """Applies Non-Maximum Suppression (NMS) to predicted bounding boxes.
 
     Filters boxes by confidence threshold and then applies batched NMS to remove

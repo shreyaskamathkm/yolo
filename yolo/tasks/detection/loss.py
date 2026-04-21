@@ -133,7 +133,7 @@ class DualLoss:
     an auxiliary learning branch alongside the main branch.
     """
 
-    def __init__(self, cfg: Config, vec2box) -> None:
+    def __init__(self, cfg: Config, vec2box: Any) -> None:
         """Initializes the DualLoss.
 
         Args:
@@ -167,7 +167,7 @@ class DualLoss:
         return sum(total_loss), loss_dict
 
 
-def create_loss_function(cfg: Config, vec2box) -> DualLoss:
+def create_loss_function(cfg: Config, vec2box: Any) -> DualLoss:
     """Factory function to build the requested loss function.
 
     Args:
