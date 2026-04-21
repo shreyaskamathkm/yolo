@@ -1,11 +1,16 @@
+import time
 from math import ceil
 from pathlib import Path
 
+import cv2
+import filetype
+import numpy as np
 from lightning import LightningModule
 from torchmetrics.detection import MeanAveragePrecision
 
 from yolo.config.config import Config
 from yolo.data.loader import create_dataloader
+from yolo.deploy import create_inference_backend
 from yolo.model.builder import create_model
 from yolo.tasks.detection.loss import create_loss_function
 from yolo.tasks.detection.postprocess import create_converter, to_metrics_format
@@ -26,7 +31,19 @@ class BaseModel(LightningModule):
 
 @register("detection", "validation")
 class DetectionValidateModel(BaseModel):
+    """LightningModule for YOLO detection validation.
+
+    Handles metric calculation (mAP), data loading for validation,
+    and post-processing of model predictions.
+    """
+
     def __init__(self, cfg: Config):
+        """Initializes the validation solver.
+
+        Args:
+            cfg (Config): System configuration.
+        """
+
         super().__init__(cfg)
         self.cfg = cfg
         if self.cfg.task.task == "validation":
@@ -71,7 +88,19 @@ class DetectionValidateModel(BaseModel):
 
 @register("detection", "train")
 class DetectionTrainModel(DetectionValidateModel):
+    """LightningModule for YOLO detection training.
+
+    Extends the validation model to include training loops, loss calculation,
+    and optimizer/scheduler configuration.
+    """
+
     def __init__(self, cfg: Config):
+        """Initializes the training solver.
+
+        Args:
+            cfg (Config): System configuration.
+        """
+
         super().__init__(cfg)
         self.cfg = cfg
         self.train_loader = create_dataloader(self.cfg.task.data, self.cfg.dataset, self.cfg.task.task)
@@ -131,16 +160,39 @@ class DetectionTrainModel(DetectionValidateModel):
 
 
 @register("detection", "inference")
-class DetectionInferenceModel(BaseModel):
+class DetectionInferenceModel(LightningModule):
+    """LightningModule for YOLO detection inference.
+
+    Handles high-performance inference using various backends, real-time
+    preview of results, and saving of visualized outputs (images/videos).
+    """
+
     def __init__(self, cfg: Config):
-        super().__init__(cfg)
+        """Initializes the inference solver.
+
+        Args:
+            cfg (Config): System configuration.
+        """
+
+        super().__init__()
         self.cfg = cfg
-        # TODO: Add FastModel
+        self.model = create_inference_backend(cfg.task.backend, self.cfg.weight, str(self.device), self.cfg)
         self.predict_loader = create_dataloader(cfg.task.data, cfg.dataset, cfg.task.task)
+        self.last_time = time.time()
+        self.video_writer = None
+        self.current_video_path = None
+
+    def forward(self, x):
+        return self.model(x)
 
     def setup(self, stage):
         self.vec2box = create_converter(
-            self.cfg.model.name, self.model, self.cfg.model.anchor, self.cfg.image_size, self.device
+            self.cfg.model.name,
+            self.model,
+            self.cfg.model.anchor,
+            self.cfg.image_size,
+            self.device,
+            class_num=self.cfg.dataset.class_num,
         )
         self.post_process = PostProcess(self.vec2box, self.cfg.task.nms)
 
@@ -148,18 +200,69 @@ class DetectionInferenceModel(BaseModel):
         return self.predict_loader
 
     def predict_step(self, batch, batch_idx):
-        images, rev_tensor, origin_frame = batch
-        predicts = self.post_process(self(images), rev_tensor=rev_tensor)
+        images, rev_tensor, origin_frame, path = batch
+        results = self(images)
+        predicts = self.post_process(results, rev_tensor=rev_tensor)
         img = draw_bboxes(origin_frame, predicts, idx2label=self.cfg.dataset.class_list)
         if getattr(self.predict_loader, "is_stream", None):
             fps = self._display_stream(img)
         else:
             fps = None
         if getattr(self.cfg.task, "save_predict", None):
-            self._save_image(img, batch_idx)
+            self._save_result(img, batch_idx, path)
         return img, fps
 
-    def _save_image(self, img, batch_idx):
-        save_image_path = Path(self.trainer.default_root_dir) / f"frame{batch_idx:03d}.png"
-        img.save(save_image_path)
-        print(f"💾 Saved visualize image at {save_image_path}")
+    def on_predict_epoch_end(self):
+        if self.video_writer is not None:
+            self.video_writer.release()
+            self.video_writer = None
+            print("🎥 Video saved successfully.")
+
+    def _display_stream(self, img):
+        curr_time = time.time()
+        fps = 1 / (curr_time - self.last_time) if curr_time > self.last_time else 0.0
+        self.last_time = curr_time
+        return fps
+
+    def _save_result(self, img, batch_idx, path=None):
+        if isinstance(path, Path) and path.is_file():
+            if filetype.is_image(path):
+                # Save as individual image
+                save_name = f"{path.name}"
+                save_path = Path(self.trainer.default_root_dir) / save_name
+                img.save(save_path)
+                print(f"💾 Saved visualize image at {save_path}")
+            elif filetype.is_video(path):
+                # Process as a video frame
+                self._write_video_frame(img, path)
+        else:
+            # Fallback for live streams or unknown sources
+            if getattr(self.predict_loader, "is_stream", None) or (path is not None and "stream" in str(path).lower()):
+                self._write_video_frame(img, path)
+            else:
+                save_name = f"frame{batch_idx:03d}.png"
+                save_path = Path(self.trainer.default_root_dir) / save_name
+                img.save(save_path)
+                print(f"💾 Saved visualize image at {save_path}")
+
+    def _write_video_frame(self, img, path):
+        if path != self.current_video_path and self.video_writer is not None:
+            self.video_writer.release()
+            self.video_writer = None
+
+        self.current_video_path = path
+        img_numpy = np.array(img)
+        img_bgr = cv2.cvtColor(img_numpy, cv2.COLOR_RGB2BGR)
+        h, w = img_bgr.shape[:2]
+
+        if self.video_writer is None:
+            save_name = f"{path.stem}_out.mp4" if isinstance(path, Path) else "stream_out.mp4"
+            save_path = str(Path(self.trainer.default_root_dir) / save_name)
+            fps = self.predict_loader.cap.get(cv2.CAP_PROP_FPS) if hasattr(self.predict_loader, "cap") else 30
+            if fps <= 0:
+                fps = 30
+            fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+            self.video_writer = cv2.VideoWriter(save_path, fourcc, fps, (w, h))
+            print(f"🎥 Initialized video writer: {save_path} ({w}x{h} @ {fps} FPS)")
+
+        self.video_writer.write(img_bgr)

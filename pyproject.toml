@@ -1,6 +1,6 @@
 [project]
 name = "yolo"
-version = "0.2.2"
+version = "0.3.0"
 description = "Official Implementation of YOLO"
 authors = [
   {name = "Shreyas Kamath", email = "shreyaskamathkm@gmail.com"}
@@ -19,6 +19,7 @@ dependencies = [
     "graphviz",
     "hydra-core",
     "lightning",
+    "filetype",
     "loguru",
     "numpy",
     "opencv-python",
@@ -35,7 +36,6 @@ dependencies = [
 dev = [
     "yolo[docs]",
     "bump-my-version",
-    "gradio",
     "pytest",
     "pytest-cov",
     "pre-commit",
@@ -46,6 +46,7 @@ docs = [
     "mkdocstrings[python]",
     "pymdown-extensions",
 ]
+export=["onnx", "onnxscript", "onnxruntime","torch-tensorrt"]
 
 [tool.setuptools.packages.find]
 where = ["."]
@@ -69,7 +70,7 @@ requires = [
 yolo = "yolo.cli:main"
 
 [tool.bumpversion]
-current_version = "0.2.2"
+current_version = "0.3.0"
 commit = true
 tag = false
 message = "chore: bump version {current_version} -> {new_version}"

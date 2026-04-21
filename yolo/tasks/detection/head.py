@@ -1,6 +1,4 @@
-# TODO Phase 2: update imports — Conv from yolo.model.blocks.basic,
-#               Anchor2Vec, ImplicitA, ImplicitM from yolo.model.blocks.implicit
-from typing import List, Tuple
+from typing import Any, Dict, List, Tuple
 
 import torch
 from torch import nn
@@ -11,9 +9,22 @@ from yolo.utils.module_utils import round_up
 
 
 class Detection(nn.Module):
-    """A single YOLO Detection head for detection models"""
+    """A single YOLO Prediction Head.
+
+    Decouples the prediction into classification and box regression branches.
+    Uses Anchor2Vec to convert raw regression outputs into vector formats.
+    """
 
     def __init__(self, in_channels: Tuple[int], num_classes: int, *, reg_max: int = 16, use_group: bool = True):
+        """Initializes the Detection head.
+
+        Args:
+            in_channels (Tuple[int]): Number of input channels.
+            num_classes (int): Number of target classes.
+            reg_max (int, optional): Maximum regression distance. Defaults to 16.
+            use_group (bool, optional): Whether to use grouped convolutions for Efficiency.
+                Defaults to True.
+        """
         super().__init__()
 
         groups = 4 if use_group else 1
@@ -45,7 +56,19 @@ class Detection(nn.Module):
 
 
 class IDetection(nn.Module):
+    """A YOLOv7-style Implicit Detection head.
+
+    Uses implicit addition and multiplication layers to refine predictions.
+    """
+
     def __init__(self, in_channels: Tuple[int], num_classes: int, *args, anchor_num: int = 3, **kwargs):
+        """Initializes the IDetection head.
+
+        Args:
+            in_channels (Tuple[int]): Number of input channels.
+            num_classes (int): Number of target classes.
+            anchor_num (int, optional): Number of anchors per scale. Defaults to 3.
+        """
         super().__init__()
 
         if isinstance(in_channels, tuple):
@@ -66,9 +89,20 @@ class IDetection(nn.Module):
 
 
 class MultiheadDetection(nn.Module):
-    """Multihead Detection module for Dual detect or Triple detect"""
+    """Module that manages multiple prediction heads for different scales.
 
-    def __init__(self, in_channels: List[int], num_classes: int, **head_kwargs):
+    Automatically handles the instantiation of plain Detection or implicit
+    IDetection heads based on the provided configuration.
+    """
+
+    def __init__(self, in_channels: List[int], num_classes: int, **head_kwargs: Dict[str, Any]):
+        """Initializes the MultiheadDetection module.
+
+        Args:
+            in_channels (List[int]): List of input channel counts for each scale.
+            num_classes (int): Number of target classes.
+            **head_kwargs (Dict[str, Any]): Additional arguments passed to each detection head.
+        """
         super().__init__()
         DetectionHead = Detection
 

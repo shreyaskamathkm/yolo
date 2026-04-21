@@ -15,7 +15,12 @@ from yolo.config.schemas.model import (
     ModelConfig,
     YOLOLayer,
 )
-from yolo.config.schemas.task import InferenceConfig, NMSConfig, ValidationConfig
+from yolo.config.schemas.task import (
+    ExportConfig,
+    InferenceConfig,
+    NMSConfig,
+    ValidationConfig,
+)
 from yolo.config.schemas.training import (
     EMAConfig,
     LossConfig,
@@ -30,7 +35,7 @@ from yolo.config.schemas.training import (
 
 @dataclass
 class Config:
-    task: Union[TrainConfig, InferenceConfig, ValidationConfig]
+    task: Union[TrainConfig, InferenceConfig, ValidationConfig, ExportConfig]
     dataset: DatasetConfig
     model: ModelConfig
     name: str
@@ -154,6 +159,7 @@ __all__ = [
     "NMSConfig",
     "InferenceConfig",
     "ValidationConfig",
+    "ExportConfig",
     "Config",
     "IDX_TO_ID",
 ]

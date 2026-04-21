@@ -28,22 +28,36 @@ model = model.to(device)
 
 ## Deploy Model
 
-Removes the auxiliary branch for fast inference. Loads/compiles to ONNX or TensorRT if configured.
+Optimizes the model for inference by stripping auxiliary branches and loading it into a specialized backend (Torch, ONNX, or TensorRT).
 
 ```python
-model = FastModelLoader(cfg).load_model(device)
+from yolo.deploy.factory import create_inference_backend
+
+backend = create_inference_backend(cfg.task.backend, cfg.weight, device, cfg)
 ```
 
 ## Autoload Converter
 
-Autoloads the converter based on model type (`v7` → `Anc2Box`, `v9` → `Vec2Box`).
+Autoloads the converter based on model type (`v7` → `Anc2Box`, `v9` → `Vec2Box`). The converter transforms raw model outputs into bounding boxes.
 
-| Argument | Type | Description |
-|---|---|---|
-| Model Name | `str` | Selects `Vec2Box` or `Anc2Box` |
-| Anchor Config | — | Anchor configuration for generating the anchor grid |
-| `model`, `image_size` | — | Used for auto-detecting the anchor grid |
+| Argument | Description |
+|---|---|
+| `model_name` | Name of the model (selects `Vec2Box` or `Anc2Box`) |
+| `model` | The model instance used for auto-detecting the anchor grid |
+| `anchor_cfg` | Anchor configuration for generating the grid |
+| `image_size` | The input image resolution `[H, W]` |
+| `device` | Computing device |
+| `class_num` | Number of classes (required for `Anc2Box`) |
 
 ```python
-converter = create_converter(cfg.model.name, model, cfg.model.anchor, cfg.image_size, device)
+from yolo.tasks.detection.postprocess import create_converter
+
+converter = create_converter(
+    cfg.model.name,
+    model,
+    cfg.model.anchor,
+    cfg.image_size,
+    device,
+    class_num=cfg.dataset.class_num
+)
 ```

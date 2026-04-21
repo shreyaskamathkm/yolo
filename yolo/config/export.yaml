@@ -1,0 +1,10 @@
+defaults:
+  - task: export
+  - dataset: coco
+  - model: v9-t
+  - _self_
+
+weight: weights/v9-t.pt
+image_size: [640, 640]
+task:
+  output_dir: exports/v9-t

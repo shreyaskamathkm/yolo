@@ -16,15 +16,20 @@ def draw_bboxes(
     bboxes: List[List[Union[int, float]]],
     *,
     idx2label: Optional[list] = None,
-):
-    """
-    Draw bounding boxes on an image.
+) -> Image.Image:
+    """Draws bounding boxes and labels onto an image.
 
     Args:
-    - img (PIL Image or torch.Tensor): Image on which to draw the bounding boxes.
-    - bboxes (List of Lists/Tensors): Bounding boxes with [class_id, x_min, y_min, x_max, y_max],
-      where coordinates are normalized [0, 1].
+        img (Union[Image.Image, torch.Tensor]): The input image.
+        bboxes (List[List[Union[int, float]]]): A list of bounding boxes in
+            `[class_id, x_min, y_min, x_max, y_max, (optional) confidence]` format.
+        idx2label (Optional[list], optional): A list mapping class IDs to human-readable
+            labels.
+
+    Returns:
+        Image.Image: The image with boxes and labels drawn.
     """
+
     # Convert tensor image to PIL Image if necessary
     if isinstance(img, torch.Tensor):
         if img.dim() > 3:
@@ -71,6 +76,17 @@ def draw_bboxes(
 
 
 def draw_model(*, model_cfg: ModelConfig = None, model: YOLO = None, v7_base=False):
+    """Generates a graphviz visualization of the model architecture.
+
+    Args:
+        model_cfg (Optional[ModelConfig]): Configuration to build a model from.
+        model (Optional[YOLO]): An existing YOLO model instance.
+        v7_base (bool): Whether to simplify the graph using YOLOv7-specific patterns.
+
+    Note:
+        Requires the `graphviz` library and system backend.
+    """
+
     from graphviz import Digraph
 
     if model_cfg:

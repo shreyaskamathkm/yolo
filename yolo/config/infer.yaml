@@ -1,0 +1,16 @@
+defaults:
+  - task: inference
+  - model: v9-c
+  - dataset: coco
+  - general
+  - _self_
+
+hydra:
+  run:
+    dir: runs/${task.task}/${name}
+
+name: inference_onnx
+weight: exports/v9-c/v9-c.onnx
+
+task:
+  backend: onnx

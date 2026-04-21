@@ -54,15 +54,15 @@ def test_validation_data_loader_correctness(validation_dataloader: DataLoader):
 
 def test_file_stream_data_loader_frame(file_stream_data_loader: StreamDataLoader):
     """Test the frame output from the file stream data loader."""
-    frame, rev_tensor, origin_frame = next(iter(file_stream_data_loader))
+    frame, rev_tensor, origin_frame, path = next(iter(file_stream_data_loader))
     assert frame.shape == (1, 3, 640, 640)
     assert rev_tensor.shape == (1, 5)
-    assert origin_frame.size == (1024, 768)
+    assert origin_frame.size == (480, 640)
 
 
 def test_directory_stream_data_loader_frame(directory_stream_data_loader: StreamDataLoader):
     """Test the frame output from the directory stream data loader."""
-    frame, rev_tensor, origin_frame = next(iter(directory_stream_data_loader))
+    frame, rev_tensor, origin_frame, path = next(iter(directory_stream_data_loader))
     assert frame.shape == (1, 3, 640, 640)
     assert rev_tensor.shape == (1, 5)
     assert origin_frame.size != (640, 640)

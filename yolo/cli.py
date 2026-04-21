@@ -3,27 +3,31 @@ from lightning import Trainer
 
 import yolo.tasks.detection.solver  # register detection solvers
 from yolo.config.config import Config
+from yolo.deploy import ModelExporter
 from yolo.tasks.registry import SOLVERS, TRAINER_METHODS
 from yolo.utils.logging_utils import setup
 
 
 @hydra.main(config_path="config", config_name="config", version_base=None)
 def main(cfg: Config):
+    if cfg.task.task == "export":
+        ModelExporter(cfg)()
+        return
+
     callbacks, loggers, save_path = setup(cfg)
 
-    trainer_cfg = cfg.trainer
     trainer = Trainer(
-        accelerator=trainer_cfg.accelerator,
-        devices=trainer_cfg.device,
+        accelerator=cfg.trainer.accelerator,
+        devices=cfg.trainer.device,
         max_epochs=getattr(cfg.task, "epoch", None),
-        precision=trainer_cfg.precision,
+        precision=cfg.trainer.precision,
         callbacks=callbacks,
-        sync_batchnorm=trainer_cfg.sync_batchnorm,
+        sync_batchnorm=cfg.trainer.sync_batchnorm,
         logger=loggers,
-        log_every_n_steps=trainer_cfg.log_every_n_steps,
-        gradient_clip_val=trainer_cfg.gradient_clip_val,
-        gradient_clip_algorithm=trainer_cfg.gradient_clip_algorithm,
-        deterministic=trainer_cfg.deterministic,
+        log_every_n_steps=cfg.trainer.log_every_n_steps,
+        gradient_clip_val=cfg.trainer.gradient_clip_val,
+        gradient_clip_algorithm=cfg.trainer.gradient_clip_algorithm,
+        deterministic=cfg.trainer.deterministic,
         enable_progress_bar=not getattr(cfg, "quiet", False),
         default_root_dir=save_path,
     )
@@ -33,7 +37,8 @@ def main(cfg: Config):
         raise ValueError(f"No solver registered for task_type={cfg.task_type!r}, mode={cfg.task.task!r}")
 
     model = SOLVERS[key](cfg)
-    getattr(trainer, TRAINER_METHODS[cfg.task.task])(model)
+    task = getattr(trainer, TRAINER_METHODS[cfg.task.task])
+    task(model)
 
 
 if __name__ == "__main__":

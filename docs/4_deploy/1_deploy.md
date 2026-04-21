@@ -1,55 +1,76 @@
 # Inference & Deployment
 
-YOLO supports three fast inference backends selectable at runtime via `task.fast_inference`.
+YOLO supports high-performance inference across multiple backends. You can explicitly export models to specialized formats and run them using optimized backends.
 
-## Modes
+## Exporting Models
 
-| Mode | Flag | Requires |
-|---|---|---|
-| PyTorch (default) | _(omit flag)_ | nothing extra |
-| Deploy | `task.fast_inference=deploy` | nothing extra |
-| ONNX | `task.fast_inference=onnx` | `onnxruntime` |
-| TensorRT | `task.fast_inference=trt` | `torch2trt`, CUDA |
+The `export` task allows you to convert PyTorch models to other formats like ONNX or TensorRT. This process also optimizes the model by stripping auxiliary training heads.
 
-### Deploy mode
-
-Strips the auxiliary head from the model before running inference. No extra dependencies — just a lighter forward pass.
+### Usage
 
 ```bash
-python -m yolo task=inference task.fast_inference=deploy
+yolo --config-name export weight=weights/v9-c.pt formats=[onnx,trt] output_dir=exports/
 ```
 
-### ONNX
+### Configuration Options
 
-Exports the model to ONNX on the first run, then reuses the `.onnx` file on subsequent runs.
+| Option | Description | Default |
+|---|---|---|
+| `weight` | Path to the PyTorch `.pt` model | `None` |
+| `formats` | List of formats to export (`torch`, `onnx`, `trt`) | `[onnx, torch, trt]` |
+| `output_dir` | Directory to save exported models | `exports/` |
+| `image_size` | Input resolution `[H, W]` | `[640, 640]` |
 
+Each format will produce a file with the corresponding extension (e.g., `.onnx`, `.trt`, `.pt`) in the `output_dir`.
+
+---
+
+## Inference Backends
+
+Choose a backend at runtime using `task.backend`.
+
+| Backend | Key | Requires | Extension |
+|---|---|---|---|
+| Torch (Deploy) | `torch` | nothing extra | `.pt` |
+| ONNX | `onnx` | `onnxruntime` | `.onnx` |
+| TensorRT | `trt` | `torch2trt`, CUDA | `.trt` |
+
+### Running Inference
+
+To run inference using a specific backend:
+
+```bash
+# Using PyTorch (automatically strips aux heads)
+yolo task=inference task.backend=torch weight=weights/v9-c.pt
+
+# Using ONNX
+yolo task=inference task.backend=onnx weight=exports/v9-c.onnx
+
+# Using TensorRT
+yolo task=inference task.backend=trt weight=exports/v9-c.trt
+```
+
+### Backend Details
+
+#### ONNX
+High-performance cross-platform inference.
 ```bash
 pip install onnxruntime        # CPU
 pip install onnxruntime-gpu    # GPU
-
-python -m yolo task=inference task.fast_inference=onnx
-python -m yolo task=inference task.fast_inference=onnx device=cpu
 ```
 
-The exported file is saved as `<weight_stem>.onnx` next to the weight file.
-
-### TensorRT
-
-Builds a TensorRT engine on the first run (requires a CUDA GPU), then reuses the `.trt` file.
-
+#### TensorRT
+Maximum performance on NVIDIA GPUs.
 ```bash
 pip install torch2trt
-
-python -m yolo task=inference task.fast_inference=trt
 ```
-
 !!! note
-    TensorRT is not supported on MPS (Apple Silicon). The loader falls back to the standard PyTorch model automatically.
+    TensorRT is not supported on MPS (Apple Silicon). If selected on non-CUDA devices, it may fail or fall back depending on the environment.
 
 ## API
 
-::: yolo.utils.deploy_utils.FastModelLoader
+::: yolo.deploy.ModelExporter
     options:
-      members: true
-      undoc-members: true
-      show-inheritance: true
+      members:
+        - __init__
+        - __call__

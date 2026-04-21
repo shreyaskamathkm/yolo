@@ -1,8 +1,8 @@
 task: inference
 
-fast_inference:  # onnx, trt, deploy or Empty
+backend: torch  # onnx, trt, deploy or Empty
 data:
-  source: demo/images/inference/image.png
+  source: demo/images/inference/
   image_size: ${image_size}
   data_augment: {}
 nms:

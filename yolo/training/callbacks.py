@@ -118,7 +118,19 @@ class EMA(Callback):
 
 
 class GradientAccumulation(Callback):
+    """Dynamic Gradient Accumulation callback.
+
+    Adjusts the number of accumulation steps during the warmup phase to
+    simulate a larger 'equivalent' batch size, which improves stability.
+    """
+
     def __init__(self, data_cfg: DataConfig, scheduler_cfg: SchedulerConfig):
+        """Initializes the GradientAccumulation callback.
+
+        Args:
+            data_cfg (DataConfig): Dataset configuration (batch sizes).
+            scheduler_cfg (SchedulerConfig): Scheduler configuration (warmup epochs).
+        """
         super().__init__()
         self.equivalent_batch_size = data_cfg.equivalent_batch_size
         self.actual_batch_size = data_cfg.batch_size

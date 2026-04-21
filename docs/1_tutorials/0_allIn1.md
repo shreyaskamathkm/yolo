@@ -122,8 +122,8 @@ Common arguments:
 
 | Argument | Type | Description |
 |---|---|---|
-| `task.fast_inference` | `str` | `onnx`, `trt`, `deploy`, or `None`. `deploy` detaches the auxiliary head |
-| `task.data.source` | `str \| Path \| int` | Webcam ID, image folder, video/image path |
+| `task.backend` | `str` | `onnx`, `trt`, `torch`. `torch` (the default) automatically detaches auxiliary heads. |
+| `task.data.source` | `str | Path | int` | Webcam ID, image folder, video/image path, RTSP stream |
 | `task.nms.min_confidence` | `float` | Minimum prediction confidence |
 | `task.nms.min_iou` | `float` | Minimum IoU threshold for NMS |
 
@@ -131,10 +131,10 @@ Common arguments:
 
 === "git-cloned"
     ```bash
-    python -m yolo model=v9-m task.nms.min_confidence=0.1 task.data.source=0 task.fast_inference=onnx
+    python -m yolo model=v9-m task.nms.min_confidence=0.1 task.data.source=0 task.backend=onnx
     ```
 
 === "PyPI"
     ```bash
-    yolo model=v9-m task.nms.min_confidence=0.1 task.data.source=0 task.fast_inference=onnx
+    yolo model=v9-m task.nms.min_confidence=0.1 task.data.source=0 task.backend=onnx
     ```

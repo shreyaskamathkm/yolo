@@ -54,5 +54,5 @@ jobs:
           python -m yolo task=inference use_wandb=False name=AnyNameYouWant
           python -m yolo task=inference use_wandb=False image_size=\[480,640]
           python -m yolo task=inference use_wandb=False task.nms.min_confidence=0.1
-          python -m yolo task=inference use_wandb=False task.fast_inference=deploy
+          python -m yolo task=inference use_wandb=False task.backend=torch
           python -m yolo task=inference use_wandb=False task.data.source=tests/data/images/val

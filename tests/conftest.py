@@ -83,14 +83,26 @@ def solver(train_cfg: Config) -> Trainer:
 
 @pytest.fixture(scope="session")
 def vec2box(train_cfg: Config, model: YOLO, device) -> Vec2Box:
-    vec2box = create_converter(train_cfg.model.name, model, train_cfg.model.anchor, train_cfg.image_size, device)
+    vec2box = create_converter(
+        train_cfg.model.name,
+        model,
+        train_cfg.model.anchor,
+        train_cfg.image_size,
+        device,
+        class_num=train_cfg.dataset.class_num,
+    )
     return vec2box
 
 
 @pytest.fixture(scope="session")
 def anc2box(inference_v7_cfg: Config, model: YOLO, device) -> Anc2Box:
     anc2box = create_converter(
-        inference_v7_cfg.model.name, model, inference_v7_cfg.model.anchor, inference_v7_cfg.image_size, device
+        inference_v7_cfg.model.name,
+        model,
+        inference_v7_cfg.model.anchor,
+        inference_v7_cfg.image_size,
+        device,
+        class_num=inference_v7_cfg.dataset.class_num,
     )
     return anc2box
 
@@ -109,11 +121,13 @@ def validation_dataloader(validation_cfg: Config):
 
 @pytest.fixture(scope="session")
 def file_stream_data_loader(inference_cfg: Config):
+    inference_cfg.task.data.source = "tests/data/images/train/000000050725.jpg"
     return StreamDataLoader(inference_cfg.task.data)
 
 
 @pytest.fixture(scope="session")
 def file_stream_data_loader_v7(inference_v7_cfg: Config):
+    inference_v7_cfg.task.data.source = "tests/data/images/train/000000050725.jpg"
     return StreamDataLoader(inference_v7_cfg.task.data)
 
 

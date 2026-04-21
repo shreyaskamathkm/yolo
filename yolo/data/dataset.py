@@ -12,13 +12,13 @@ from torch.utils.data import Dataset
 from yolo.config.config import DataConfig, DatasetConfig
 from yolo.data.augmentation import *
 from yolo.data.augmentation import AugmentationComposer
-from yolo.data.preparation import prepare_dataset
-from yolo.utils.dataset_utils import (
+from yolo.data.helper import (
     create_image_metadata,
     locate_label_paths,
     scale_segmentation,
     tensorlize,
 )
+from yolo.data.preparation import prepare_dataset
 from yolo.utils.logger import logger
 
 

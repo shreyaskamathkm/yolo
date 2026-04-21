@@ -67,7 +67,27 @@ class DFLoss(nn.Module):
 
 
 class YOLOLoss:
+    """Standard YOLO loss calculator.
+
+    Computes the weighted sum of classification loss (BCE), box regression loss (IoU),
+    and distribution focal loss (DFL) after target assignment.
+
+    Attributes:
+        cls (BCELoss): Classification loss component.
+        iou (BoxLoss): Box regression loss component.
+        dfl (DFLoss): Distribution Focal Loss component.
+        matcher (BoxMatcher): Label assignment strategy.
+    """
+
     def __init__(self, loss_cfg: LossConfig, vec2box: Vec2Box, class_num: int = 80, reg_max: int = 16) -> None:
+        """Initializes the YOLOLoss.
+
+        Args:
+            loss_cfg (LossConfig): Matcher and loss settings.
+            vec2box (Vec2Box): Box converter instance.
+            class_num (int, optional): Number of classes. Defaults to 80.
+            reg_max (int, optional): Maximum regression distance. Defaults to 16.
+        """
         self.class_num = class_num
         self.vec2box = vec2box
 
@@ -107,7 +127,19 @@ class YOLOLoss:
 
 
 class DualLoss:
-    def __init__(self, cfg: Config, vec2box) -> None:
+    """Wrapper class that manages main and auxiliary losses.
+
+    This is used for architectures like YOLOv9 (Deep-Supervision) that feature
+    an auxiliary learning branch alongside the main branch.
+    """
+
+    def __init__(self, cfg: Config, vec2box: Any) -> None:
+        """Initializes the DualLoss.
+
+        Args:
+            cfg (Config): System configuration.
+            vec2box: Box converter instance.
+        """
         loss_cfg = cfg.task.loss
         self.loss = YOLOLoss(loss_cfg, vec2box, class_num=cfg.dataset.class_num, reg_max=cfg.model.anchor.reg_max)
 
@@ -135,7 +167,16 @@ class DualLoss:
         return sum(total_loss), loss_dict
 
 
-def create_loss_function(cfg: Config, vec2box) -> DualLoss:
+def create_loss_function(cfg: Config, vec2box: Any) -> DualLoss:
+    """Factory function to build the requested loss function.
+
+    Args:
+        cfg (Config): System configuration.
+        vec2box: Box converter instance.
+
+    Returns:
+        DualLoss: An initialized loss instance.
+    """
     # TODO: make it flexible, if cfg doesn't contain aux, only use SingleLoss
     loss_function = DualLoss(cfg, vec2box)
     logger.info(":white_check_mark: Success load loss function")

@@ -13,16 +13,28 @@ from yolo.utils.module_utils import get_layer_map
 
 
 class YOLO(nn.Module):
-    """
-    A preliminary YOLO (You Only Look Once) model class still under development.
+    """The core YOLO model class that assembles layers from a configuration.
 
-    Parameters:
-        model_cfg: Configuration for the YOLO model. Expected to define the layers,
-                   parameters, and any other relevant configuration details.
+    This class dynamically builds the neural network based on the architecture
+    defined in a YAML configuration file. It handles layer instantiation,
+    source indexing for skip-connections, and weights management.
+
+    Attributes:
+        num_classes (int): Number of detection classes.
+        layer_map (Dict): Map of layer names to their respective PyTorch modules.
+        model (nn.ModuleList): The sequential list of layers comprising the model.
+        reg_max (int): Maximum regression distance for box predictions.
     """
 
     def __init__(self, model_cfg: ModelConfig, class_num: int = 80):
+        """Initializes the YOLO model.
+
+        Args:
+            model_cfg (ModelConfig): Architecture and anchor configuration.
+            class_num (int, optional): Number of output classes. Defaults to 80.
+        """
         super(YOLO, self).__init__()
+
         self.num_classes = class_num
         self.layer_map = get_layer_map()  # Get the map Dict[str: Module]
         self.model: List[YOLOLayer] = nn.ModuleList()
@@ -161,7 +173,7 @@ class YOLO(nn.Module):
                 layer_name.sort()
                 logger.warning(f":warning: Weight {error_name} for Layer {layer_idx}: {', '.join(layer_name)}")
 
-        self.model.load_state_dict(model_state_dict)
+        self.model.load_state_dict(model_state_dict, strict=True)
 
 
 def create_model(model_cfg: ModelConfig, weight_path: Union[bool, Path] = True, class_num: int = 80) -> YOLO:

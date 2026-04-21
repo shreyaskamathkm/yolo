@@ -12,9 +12,12 @@
 
 ::: yolo.data.loader
     options:
-      members: true
+      members:
+        - create_dataloader
+        - StreamDataLoader
       undoc-members: true
       show-inheritance: true
+
 
 ## Augmentation
 
