@@ -10,7 +10,8 @@ from yolo import Anc2Box, Config, Vec2Box, create_converter, create_model
 from yolo.data.loader import StreamDataLoader, create_dataloader
 from yolo.data.preparation import prepare_dataset
 from yolo.model.builder import YOLO
-from yolo.utils.logging_utils import set_seed, setup
+from yolo.utils.logging_utils import build_loggers
+from yolo.utils.runner_utils import build_callbacks, set_seed
 
 
 def pytest_configure(config):
@@ -66,7 +67,8 @@ def model_v7(inference_v7_cfg: Config, device) -> YOLO:
 def solver(train_cfg: Config) -> Trainer:
     train_cfg.use_wandb = False
     del train_cfg.task.data.equivalent_batch_size
-    callbacks, loggers, save_path = setup(train_cfg)
+    loggers, save_path = build_loggers(train_cfg)
+    callbacks = build_callbacks(train_cfg)
     trainer = Trainer(
         accelerator="auto",
         max_epochs=getattr(train_cfg.task, "epoch", None),
@@ -83,7 +85,7 @@ def solver(train_cfg: Config) -> Trainer:
 
 @pytest.fixture(scope="session")
 def vec2box(train_cfg: Config, model: YOLO, device) -> Vec2Box:
-    vec2box = create_converter(
+    return create_converter(
         train_cfg.model.name,
         model,
         train_cfg.model.anchor,
@@ -91,12 +93,11 @@ def vec2box(train_cfg: Config, model: YOLO, device) -> Vec2Box:
         device,
         class_num=train_cfg.dataset.class_num,
     )
-    return vec2box
 
 
 @pytest.fixture(scope="session")
 def anc2box(inference_v7_cfg: Config, model: YOLO, device) -> Anc2Box:
-    anc2box = create_converter(
+    return create_converter(
         inference_v7_cfg.model.name,
         model,
         inference_v7_cfg.model.anchor,
@@ -104,7 +105,6 @@ def anc2box(inference_v7_cfg: Config, model: YOLO, device) -> Anc2Box:
         device,
         class_num=inference_v7_cfg.dataset.class_num,
     )
-    return anc2box
 
 
 @pytest.fixture(scope="session")
