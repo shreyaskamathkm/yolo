@@ -21,7 +21,7 @@ def get_cfg(overrides=[]) -> Config:
     config_path = "."
     with initialize(config_path=config_path, version_base=None):
         cfg: Config = compose(config_name="test", overrides=overrides)
-        set_seed(cfg.lucky_number)
+        set_seed(cfg.seed)
         return cfg
 
 

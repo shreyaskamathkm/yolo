@@ -1,6 +1,6 @@
 hydra:
   run:
-    dir: runs/${task.task}/${name}
+    dir: ${out_path}/${task.task}/${name}
 
 name: v9-dev
 

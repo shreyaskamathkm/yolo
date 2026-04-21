@@ -30,6 +30,7 @@ dependencies = [
     "torch",
     "torchvision",
     "wandb",
+    "tensorboard",
 ]
 
 [project.optional-dependencies]
@@ -39,8 +40,8 @@ dev = [
     "pytest",
     "pytest-cov",
     "pre-commit",
-    "tensorboard",
 ]
+
 docs = [
     "mkdocs-material",
     "mkdocstrings[python]",
