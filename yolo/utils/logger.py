@@ -7,5 +7,6 @@ from rich.logging import RichHandler
 logger = logging.getLogger("yolo")
 logger.setLevel(logging.DEBUG)
 logger.propagate = False
+
 if rank_zero_only.rank == 0 and not logger.hasHandlers():
     logger.addHandler(RichHandler(console=Console(), show_level=True, show_path=True, show_time=True, markup=True))
