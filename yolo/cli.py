@@ -43,7 +43,11 @@ def main(cfg: Config):
 
     model = SOLVERS[key](cfg)
     task = getattr(trainer, TRAINER_METHODS[cfg.task.task])
-    task(model)
+    # Handle checkpoint resuming for training
+    if cfg.task.task == "train" and hasattr(cfg.task, "resume") and cfg.task.resume:
+        task(model, ckpt_path=cfg.task.resume)
+    else:
+        task(model)
 
 
 if __name__ == "__main__":

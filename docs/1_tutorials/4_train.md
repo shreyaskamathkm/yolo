@@ -32,6 +32,16 @@ flowchart LR
 ```
 
 ## Training Callbacks
+## Resuming Training
+
+To resume training from a checkpoint, set the `resume` parameter in your training config:
+
+```yaml
+resume: /path/to/checkpoint.ckpt  # Resume from specific checkpoint
+```
+
+!!! tip
+    Checkpoints are saved in the experiment directory under `lightning_logs/version_X/checkpoints/`.
 
 ### Gradient Accumulation
 

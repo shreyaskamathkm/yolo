@@ -4,7 +4,7 @@ defaults:
   - model: v9-t
   - _self_
 
-weight: weights/v9-t.pt
+weight: runs/train/v9-dev/checkpoints/epoch_00_map_0.64.ckpt
 image_size: [640, 640]
 task:
-  output_dir: exports/v9-t
+  output_dir: exports/v9-t_test/
