@@ -1,6 +1,6 @@
 [project]
 name = "yolo"
-version = "0.3.0"
+version = "0.4.0"
 description = "Official Implementation of YOLO"
 authors = [
   {name = "Shreyas Kamath", email = "shreyaskamathkm@gmail.com"}
@@ -71,7 +71,7 @@ requires = [
 yolo = "yolo.cli:main"
 
 [tool.bumpversion]
-current_version = "0.3.0"
+current_version = "0.4.0"
 commit = true
 tag = false
 message = "chore: bump version {current_version} -> {new_version}"
