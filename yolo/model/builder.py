@@ -136,7 +136,7 @@ class YOLO(nn.Module):
         else:
             raise ValueError(f"Unsupported layer type: {layer_type}")
 
-    def save_load_weights(self, weights: Union[Path, OrderedDict]):
+    def save_load_weights(self, weights: Union[Path, OrderedDict], weight_key: str = "state_dict"):
         """
         Update the model's weights with the provided weights.
 
@@ -145,7 +145,11 @@ class YOLO(nn.Module):
         """
         if isinstance(weights, Path):
             weights = torch.load(weights, map_location=torch.device("cpu"), weights_only=False)
-        if "state_dict" in weights:
+        if weight_key in weights:
+            weights = {name.removeprefix("model.model."): key for name, key in weights[weight_key].items()}
+        elif "state_dict" in weights:
+            if weight_key != "state_dict":
+                logger.warning(f":warning: {weight_key} is unavailable, falling back to state_dict")
             weights = {name.removeprefix("model.model."): key for name, key in weights["state_dict"].items()}
         model_state_dict = self.model.state_dict()
 
@@ -176,7 +180,9 @@ class YOLO(nn.Module):
         self.model.load_state_dict(model_state_dict, strict=True)
 
 
-def create_model(model_cfg: ModelConfig, weight_path: Union[bool, Path] = True, class_num: int = 80) -> YOLO:
+def create_model(
+    model_cfg: ModelConfig, weight_path: Union[bool, Path] = True, class_num: int = 80, weight_key: str = "state_dict"
+) -> YOLO:
     """Constructs and returns a YOLO model from a model config.
 
     Args:
@@ -200,7 +206,7 @@ def create_model(model_cfg: ModelConfig, weight_path: Union[bool, Path] = True, 
             logger.info(f"🌐 Weight {weight_path} not found, try downloading")
             prepare_weight(weight_path=weight_path)
         if weight_path.exists():
-            model.save_load_weights(weight_path)
+            model.save_load_weights(weight_path, weight_key=weight_key)
             logger.info(":white_check_mark: Success load model & weight")
     else:
         logger.info(":white_check_mark: Success load model")

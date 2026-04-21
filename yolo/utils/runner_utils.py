@@ -49,10 +49,11 @@ def build_callbacks(cfg: Config):
         callbacks.append(LearningRateMonitor(logging_interval="step"))
 
     if cfg.task.task == "train":
+        save_top_k = -1 if getattr(cfg.task, "save_all_checkpoints", False) else 2
         callbacks.append(
             ModelCheckpoint(
                 save_last=True,
-                save_top_k=2,
+                save_top_k=save_top_k,
                 monitor="map",
                 mode="max",
                 filename="epoch_{epoch:02d}_map_{map:.2f}",

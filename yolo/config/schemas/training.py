@@ -61,6 +61,7 @@ class EMAConfig:
 class TrainConfig:
     task: str
     epoch: int
+    save_all_checkpoints: bool
     data: DataConfig
     optimizer: OptimizerConfig
     loss: LossConfig

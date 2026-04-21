@@ -11,7 +11,8 @@ from yolo.utils.runner_utils import build_callbacks, set_seed
 
 @hydra.main(config_path="config", config_name="config", version_base=None)
 def main(cfg: Config):
-    set_seed(cfg.seed)
+    if hasattr(cfg, "seed"):
+        set_seed(cfg.seed)
 
     if cfg.task.task == "export":
         ModelExporter(cfg)()

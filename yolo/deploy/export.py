@@ -39,7 +39,9 @@ class ModelExporter:
         """
         self.cfg = cfg
         self.cfg.model.model.auxiliary = {}
-        self.model = create_model(cfg.model, class_num=cfg.dataset.class_num, weight_path=cfg.weight).eval()
+        self.model = create_model(
+            cfg.model, class_num=cfg.dataset.class_num, weight_path=cfg.weight, weight_key="ema_shadow"
+        ).eval()
 
     def __call__(self) -> None:
         """Executes the export process for all requested formats.
