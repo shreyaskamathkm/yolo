@@ -24,13 +24,6 @@
       undoc-members: true
       show-inheritance: true
 
-## Dataset Utilities
-
-::: yolo.utils.dataset_utils
-    options:
-      members: true
-      undoc-members: true
-      show-inheritance: true
 
 ## Drawing Utilities
 
