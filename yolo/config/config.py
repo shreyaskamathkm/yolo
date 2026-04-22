@@ -47,12 +47,13 @@ class Config:
     out_path: str
     exist_ok: bool
 
-    lucky_number: int
+    seed: int
     use_wandb: bool
     use_tensorboard: bool
 
     task_type: str
     weight: Optional[str]
+    quiet: bool = False
 
 
 IDX_TO_ID = [

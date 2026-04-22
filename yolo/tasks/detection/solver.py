@@ -6,6 +6,7 @@ import cv2
 import filetype
 import numpy as np
 from lightning import LightningModule
+from omegaconf import OmegaConf
 from torchmetrics.detection import MeanAveragePrecision
 
 from yolo.config.config import Config
@@ -24,6 +25,7 @@ class BaseModel(LightningModule):
     def __init__(self, cfg: Config):
         super().__init__()
         self.model = create_model(cfg.model, class_num=cfg.dataset.class_num, weight_path=cfg.weight)
+        self.save_hyperparameters(OmegaConf.to_container(cfg, resolve=True))
 
     def forward(self, x):
         return self.model(x)
@@ -75,14 +77,8 @@ class DetectionValidateModel(BaseModel):
 
     def on_validation_epoch_end(self):
         epoch_metrics = self.metric.compute()
-        del epoch_metrics["classes"]
+        epoch_metrics.pop("classes", None)
         self.log_dict(epoch_metrics, prog_bar=True, sync_dist=True, rank_zero_only=True, logger=True)
-        self.log_dict(
-            {"PyCOCO/AP @ .5:.95": epoch_metrics["map"], "PyCOCO/AP @ .5": epoch_metrics["map_50"]},
-            sync_dist=True,
-            rank_zero_only=True,
-            logger=True,
-        )
         self.metric.reset()
 
 

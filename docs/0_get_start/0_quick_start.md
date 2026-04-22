@@ -40,6 +40,7 @@ yolo task=train  # if installed via pip
 
 ```bash
 python -m yolo task=train dataset=AYamlFilePath model=v9-m
+yolo task=train resume=path/to/last.ckpt  # Resume training from last checkpoint
 
 yolo task=train dataset=AYamlFilePath model=v9-m  # if installed via pip
 ```

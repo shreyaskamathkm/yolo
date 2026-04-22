@@ -23,7 +23,6 @@ import wandb
 from lightning import LightningModule, Trainer, seed_everything
 from lightning.pytorch.callbacks import (
     Callback,
-    LearningRateMonitor,
     RichModelSummary,
     RichProgressBar,
 )
@@ -42,19 +41,8 @@ from typing_extensions import override
 
 from yolo.config.config import Config, YOLOLayer
 from yolo.model.builder import YOLO
-from yolo.training.callbacks import EMA, GradientAccumulation
 from yolo.utils.logger import logger
 from yolo.utils.solver_utils import make_ap_table
-
-
-# TODO: should be moved to correct position
-def set_seed(seed):
-    seed_everything(seed)
-    if torch.cuda.is_available():
-        torch.cuda.manual_seed(seed)
-        torch.cuda.manual_seed_all(seed)  # if you are using multi-GPU.
-    torch.backends.cudnn.deterministic = True
-    torch.backends.cudnn.benchmark = False
 
 
 class YOLOCustomProgress(CustomProgress):
@@ -111,7 +99,7 @@ class YOLORichProgressBar(RichProgressBar):
         epoch_descript = "[cyan]Train [white]|"
         batch_descript = "[green]Batch [white]|"
         metrics = self.get_metrics(trainer, pl_module)
-        metrics.pop("v_num")
+        metrics.pop("v_num", None)
         for metrics_name, metrics_val in metrics.items():
             if "Loss_step" in metrics_name:
                 epoch_descript += f"{metrics_name.removesuffix('_step').split('/')[1]: ^9}|"
@@ -260,44 +248,35 @@ def setup_logger(logger_name, quiet=False):
     coco_logger.setLevel(logging.ERROR)
 
 
-def setup(cfg: Config):
-    quiet = hasattr(cfg, "quiet")
+def _patch_wandb_logger(string="", level=int, newline=True, repeat=True, prefix=True, silent=False):
+    if silent:
+        return
+    for line in string.split("\n"):
+        logger.info(Text.from_ansi(":globe_with_meridians: " + line))
+
+
+def build_loggers(cfg: Config):
+    quiet = getattr(cfg, "quiet", False)
     setup_logger("lightning.fabric", quiet=quiet)
     setup_logger("lightning.pytorch", quiet=quiet)
 
-    def custom_wandb_log(string="", level=int, newline=True, repeat=True, prefix=True, silent=False):
-        if silent:
-            return
-        for line in string.split("\n"):
-            logger.info(Text.from_ansi(":globe_with_meridians: " + line))
-
-    wandb.errors.term._log = custom_wandb_log
+    wandb.errors.term._log = _patch_wandb_logger
 
     save_path = validate_log_directory(cfg, cfg.name)
 
-    progress, loggers = [], []
+    loggers = []
 
-    if cfg.task.task == "train":
-        progress.append(LearningRateMonitor(logging_interval="step"))
-    if cfg.task.task == "train" and hasattr(cfg.task.data, "equivalent_batch_size"):
-        progress.append(GradientAccumulation(data_cfg=cfg.task.data, scheduler_cfg=cfg.task.scheduler))
-
-    if hasattr(cfg.task, "ema") and cfg.task.ema.enable:
-        progress.append(EMA(cfg.task.ema.decay))
     if quiet:
         logger.setLevel(logging.ERROR)
-        return progress, loggers, save_path
+        return loggers, save_path
 
-    progress.append(YOLORichProgressBar())
-    progress.append(YOLORichModelSummary())
-    progress.append(ImageLogger())
-    if cfg.use_tensorboard:
+    if getattr(cfg, "use_tensorboard", False):
         loggers.append(TensorBoardLogger(log_graph="all", save_dir=save_path))
-    if cfg.use_wandb:
+    if getattr(cfg, "use_wandb", False):
         wandb_cfg = OmegaConf.to_container(cfg, resolve=True, throw_on_missing=True)
         loggers.append(WandbLogger(project="YOLO", name=cfg.name, save_dir=save_path, id=None, config=wandb_cfg))
 
-    return progress, loggers, save_path
+    return loggers, save_path
 
 
 def log_model_structure(model: Union[ModuleList, YOLOLayer, YOLO]):

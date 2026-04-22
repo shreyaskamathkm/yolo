@@ -105,6 +105,13 @@ python yolo/lazy.py task=validation dataset=toy
 
 Contributions to the YOLO project are welcome! See [CONTRIBUTING](docs/CONTRIBUTING.md) for guidelines on how to contribute.
 
+## To-Do List
+- [ ] Test End to End to check model training on COCO
+- [ ] Add MLFLow
+- [ ] Add  yolo v9-e version
+- [ ] Check DDP
+- [ ] Refactor utils folder by moving the files to their own folders
+
 ## Acknowledgments
 
 This project is a fork of [MultimediaTechLab/YOLO](https://github.com/MultimediaTechLab/YOLO/tree/main/yolo). Many thanks to the MultimediaTechLab team for their work on the original implementation, which served as the foundation for this repository.

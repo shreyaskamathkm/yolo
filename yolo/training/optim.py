@@ -211,6 +211,10 @@ class WarmupBatchScheduler(_LRScheduler):
         self._set_lr_momentum(epoch=epoch, batch=batch)
 
 
+if hasattr(torch.serialization, "add_safe_globals"):
+    torch.serialization.add_safe_globals([WarmupLRPolicy, LinearWarmupPolicy, YOLOWarmupPolicy, WarmupBatchScheduler])
+
+
 def create_optimizer(model: YOLO, optim_cfg: OptimizerConfig) -> Optimizer:
     """Factory function to build the optimizer.
 

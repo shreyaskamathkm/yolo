@@ -5,16 +5,21 @@ import yolo.tasks.detection.solver  # register detection solvers
 from yolo.config.config import Config
 from yolo.deploy import ModelExporter
 from yolo.tasks.registry import SOLVERS, TRAINER_METHODS
-from yolo.utils.logging_utils import setup
+from yolo.utils.logging_utils import build_loggers
+from yolo.utils.runner_utils import build_callbacks, set_seed
 
 
 @hydra.main(config_path="config", config_name="config", version_base=None)
 def main(cfg: Config):
+    if hasattr(cfg, "seed"):
+        set_seed(cfg.seed)
+
     if cfg.task.task == "export":
         ModelExporter(cfg)()
         return
 
-    callbacks, loggers, save_path = setup(cfg)
+    loggers, save_path = build_loggers(cfg)
+    callbacks = build_callbacks(cfg)
 
     trainer = Trainer(
         accelerator=cfg.trainer.accelerator,
@@ -38,7 +43,11 @@ def main(cfg: Config):
 
     model = SOLVERS[key](cfg)
     task = getattr(trainer, TRAINER_METHODS[cfg.task.task])
-    task(model)
+    # Handle checkpoint resuming for training
+    if cfg.task.task == "train" and hasattr(cfg.task, "resume") and cfg.task.resume:
+        task(model, ckpt_path=cfg.task.resume)
+    else:
+        task(model)
 
 
 if __name__ == "__main__":

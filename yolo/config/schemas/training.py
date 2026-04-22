@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Any, Dict, Union
+from typing import Any, Dict, Optional, Union
 
 from yolo.config.schemas.data import DataConfig
 from yolo.config.schemas.task import ValidationConfig
@@ -61,6 +61,8 @@ class EMAConfig:
 class TrainConfig:
     task: str
     epoch: int
+    save_all_checkpoints: bool
+    resume: Optional[str]
     data: DataConfig
     optimizer: OptimizerConfig
     loss: LossConfig
