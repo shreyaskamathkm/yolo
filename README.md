@@ -13,7 +13,7 @@ A community-maintained, batteries-included fork of [MultimediaTechLab/YOLO](http
 
 ## What This Fork Adds
 
-This fork builds on the excellent foundation of [MultimediaTechLab/YOLO](https://github.com/MultimediaTechLab/YOLO) 
+This fork builds on the excellent foundation of [MultimediaTechLab/YOLO](https://github.com/MultimediaTechLab/YOLO)
 with additional tooling, documentation, and fixes focused on practical usability:
 
 | Feature | Details |
