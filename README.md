@@ -1,10 +1,14 @@
 # YOLO: YOLOv9, YOLOv7, YOLO-RD
 
 [![Documentation](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://shreyaskamathkm.github.io/yolo/)
+
 ![GitHub License](https://img.shields.io/github/license/shreyaskamathkm/yolo)
 
-[![Developer Mode Build & Test](https://github.com/shreyaskamathkm/yolo/actions/workflows/develop.yaml/badge.svg)](https://github.com/shreyaskamathkm/yolo/actions/workflows/develop.yaml)
-[![Deploy Mode Validation & Inference](https://github.com/shreyaskamathkm/yolo/actions/workflows/deploy.yaml/badge.svg)](https://github.com/shreyaskamathkm/yolo/actions/workflows/deploy.yaml)
+[![Integration Tests](https://github.com/shreyaskamathkm/yolo/actions/workflows/integration.yaml/badge.svg)](https://github.com/shreyaskamathkm/yolo/actions/workflows/integration.yaml)
+
+[![Docker Publish](https://github.com/shreyaskamathkm/yolo/actions/workflows/docker.yaml/badge.svg)](https://github.com/shreyaskamathkm/yolo/actions/workflows/docker.yaml)
+
+[![Release](https://github.com/shreyaskamathkm/yolo/actions/workflows/release.yaml/badge.svg)](https://github.com/shreyaskamathkm/yolo/actions/workflows/release.yaml)
 
 <!-- > [!IMPORTANT]
 > This project is currently a Work In Progress and may undergo significant changes. It is not recommended for use in production environments until further notice. Please check back regularly for updates.
