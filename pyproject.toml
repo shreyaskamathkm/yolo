@@ -1,6 +1,6 @@
 [project]
 name = "yolo"
-version = "0.5.0"
+version = "0.4.1"
 description = "Official Implementation of YOLO"
 authors = [
   {name = "Shreyas Kamath", email = "shreyaskamathkm@gmail.com"}
