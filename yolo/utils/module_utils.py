@@ -1,8 +1,30 @@
 import inspect
 from typing import Tuple, Union
 
+import torch
 from torch import Tensor, nn
 from torch.nn.common_types import _size_2_t
+
+
+def unwrap_model(module: torch.nn.Module) -> torch.nn.Module:
+    """
+    Unwrap a module that was wrapped by:
+    - torch.compile(...)          → returns the original module
+    - torch.nn.parallel.DistributedDataParallel
+    - torch.nn.parallel.DataParallel
+    - yolo.utils.model_utils.WrapPyTorchModel
+    """
+
+    while True:
+        if isinstance(module, torch._dynamo.eval_frame.OptimizedModule):
+            module = module._orig_mod
+        elif isinstance(module, (
+            torch.nn.parallel.DistributedDataParallel,
+            torch.nn.parallel.DataParallel,
+        )):
+            module = module.module
+        else:
+            return module
 
 
 def get_layer_map():

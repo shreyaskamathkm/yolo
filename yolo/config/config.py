@@ -11,6 +11,7 @@ from yolo.config.schemas.data import (
 from yolo.config.schemas.model import (
     AnchorConfig,
     BlockConfig,
+    CompileConfig,
     LayerConfg,
     ModelConfig,
     YOLOLayer,
@@ -144,6 +145,7 @@ __all__ = [
     "LayerConfg",
     "BlockConfig",
     "ModelConfig",
+    "CompileConfig",
     "YOLOLayer",
     "DownloadDetail",
     "DownloadOptions",

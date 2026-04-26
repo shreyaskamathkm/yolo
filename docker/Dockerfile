@@ -48,7 +48,7 @@ RUN pip install --no-cache-dir --upgrade pip && \
 # Clone and install the repo
 # We use --user to ensure permissions are correct in the home directory
 RUN git clone https://github.com/shreyaskamathkm/yolo.git . \
-    && pip install --no-cache-dir --user .
+    && pip install --no-cache-dir --user .[export]
 
 RUN echo 'export PATH=$PATH:${HOME}/.local/bin' >> ~/.bashrc
 RUN source ~/.bashrc

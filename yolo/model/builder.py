@@ -210,4 +210,18 @@ def create_model(
             logger.info(":white_check_mark: Success load model & weight")
     else:
         logger.info(":white_check_mark: Success load model")
+
+    if model_cfg.compile and model_cfg.compile.enabled:
+        if hasattr(torch, "compile"):
+            logger.info(f"⚡ Compiling model with torch.compile (mode={model_cfg.compile.mode})")
+            model = torch.compile(
+                model,
+                mode=model_cfg.compile.mode,
+                fullgraph=model_cfg.compile.fullgraph,
+                dynamic=model_cfg.compile.dynamic,
+                backend=model_cfg.compile.backend,
+            )
+        else:
+            logger.warning("⚠️ torch.compile is not available in this version of PyTorch. Skipping compilation.")
+
     return model

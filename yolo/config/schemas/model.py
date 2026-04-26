@@ -25,10 +25,20 @@ class BlockConfig:
 
 
 @dataclass
+class CompileConfig:
+    enabled: bool = False
+    mode: str = "default"
+    fullgraph: bool = False
+    dynamic: Optional[bool] = None
+    backend: str = "inductor"
+
+
+@dataclass
 class ModelConfig:
     name: Optional[str]
     anchor: AnchorConfig
     model: Dict[str, BlockConfig]
+    compile: Optional[CompileConfig] = None
 
 
 @dataclass

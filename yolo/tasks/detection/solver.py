@@ -19,6 +19,7 @@ from yolo.tasks.registry import register
 from yolo.training.optim import create_optimizer, create_scheduler
 from yolo.utils.drawer import draw_bboxes
 from yolo.utils.model_utils import PostProcess
+from yolo.utils.module_utils import unwrap_model
 
 
 class BaseModel(LightningModule):
@@ -29,6 +30,20 @@ class BaseModel(LightningModule):
 
     def forward(self, x):
         return self.model(x)
+
+    def on_save_checkpoint(self, checkpoint: dict) -> None:
+        """Strip _orig_mod prefix from state_dict when saving."""
+        state_dict = checkpoint["state_dict"]
+        checkpoint["state_dict"] = {k.replace("model._orig_mod.", "model."): v for k, v in state_dict.items()}
+
+    def on_load_checkpoint(self, checkpoint: dict) -> None:
+        """Add _orig_mod prefix to state_dict when loading if model is compiled."""
+        if hasattr(self.model, "_orig_mod"):
+            state_dict = checkpoint["state_dict"]
+            checkpoint["state_dict"] = {
+                k.replace("model.", "model._orig_mod.") if k.startswith("model.") and "_orig_mod." not in k else k: v
+                for k, v in state_dict.items()
+            }
 
 
 @register("detection", "validation")

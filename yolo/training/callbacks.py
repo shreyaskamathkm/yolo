@@ -10,6 +10,7 @@ from lightning.pytorch.callbacks import Callback
 from yolo.config.config import DataConfig, SchedulerConfig
 from yolo.training.optim import lerp
 from yolo.utils.logger import logger
+from yolo.utils.module_utils import unwrap_model
 
 
 class EMA(Callback):
@@ -39,7 +40,8 @@ class EMA(Callback):
     def setup(self, trainer: "Trainer", pl_module: "LightningModule", stage: str) -> None:
         """Initialise shadow from the model before training begins."""
         if self.shadow is None:
-            self.shadow = {k: v.detach().clone() for k, v in pl_module.model.state_dict().items()}
+            model = unwrap_model(pl_module.model)
+            self.shadow = {k: v.detach().clone() for k, v in model.state_dict().items()}
 
     def _beta(self) -> float:
         """Effective smoothing coefficient at the current step."""
@@ -48,14 +50,15 @@ class EMA(Callback):
     @torch.no_grad()
     def update(self, pl_module: "LightningModule") -> None:
         """Blend model parameters into shadow; copy buffers directly."""
-        current = pl_module.model.state_dict()
+        model = unwrap_model(pl_module.model)
+        current = model.state_dict()
         if self.shadow is None:
             self.shadow = {k: v.detach().clone() for k, v in current.items()}
             return
 
         beta = self._beta()
 
-        param_keys = [k for k, _ in pl_module.model.named_parameters()]
+        param_keys = [k for k, _ in model.named_parameters()]
         shadow_params = [self.shadow[k] for k in param_keys]
         model_params = [current[k].detach().to(self.shadow[k].device) for k in param_keys]
         if hasattr(torch, "_foreach_lerp_"):
@@ -67,7 +70,7 @@ class EMA(Callback):
             for s, m in zip(shadow_params, model_params):
                 s.mul_(beta).add_(m, alpha=1.0 - beta)
 
-        for key, buf in pl_module.model.named_buffers():
+        for key, buf in model.named_buffers():
             self.shadow[key].copy_(buf.detach().to(self.shadow[key].device))
 
     @torch.no_grad()
@@ -75,15 +78,17 @@ class EMA(Callback):
         """Snapshot training weights then load shadow weights into the model."""
         if self.shadow is None:
             return
-        self._training_weights = {k: v.detach().clone() for k, v in pl_module.model.state_dict().items()}
-        pl_module.model.load_state_dict(self.shadow, strict=True)
+        model = unwrap_model(pl_module.model)
+        self._training_weights = {k: v.detach().clone() for k, v in model.state_dict().items()}
+        model.load_state_dict(self.shadow, strict=True)
 
     @torch.no_grad()
     def restore(self, pl_module: "LightningModule") -> None:
         """Reload the training-weight snapshot, discarding the shadow swap."""
         if self._training_weights is None:
             return
-        pl_module.model.load_state_dict(self._training_weights, strict=True)
+        model = unwrap_model(pl_module.model)
+        model.load_state_dict(self._training_weights, strict=True)
         self._training_weights = None
 
     @torch.no_grad()
@@ -113,7 +118,8 @@ class EMA(Callback):
         self.batch_count = checkpoint.get("ema_batch_count", 0)
         if self._CHECKPOINT_KEY not in checkpoint:
             return
-        target_device = next(pl_module.model.parameters()).device
+        model = unwrap_model(pl_module.model)
+        target_device = next(model.parameters()).device
         self.shadow = {k: v.detach().clone().to(target_device) for k, v in checkpoint[self._CHECKPOINT_KEY].items()}
 
 
