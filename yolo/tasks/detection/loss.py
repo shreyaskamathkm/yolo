@@ -7,7 +7,7 @@ from torch.nn import BCEWithLogitsLoss
 
 from yolo.config.config import Config, LossConfig
 from yolo.tasks.detection.postprocess import BoxMatcher, Vec2Box, calculate_iou
-from yolo.tasks.registry import register_loss, LOSS_FUNCTIONS
+from yolo.tasks.registry import LOSS_FUNCTIONS, register_loss
 from yolo.utils.logger import logger
 
 
@@ -132,9 +132,7 @@ class BaseLoss:
 
     def __init__(self, cfg: Config, vec2box: Any) -> None:
         loss_cfg = cfg.task.loss
-        self.loss = YOLOLoss(
-            loss_cfg, vec2box, class_num=cfg.dataset.class_num, reg_max=cfg.model.anchor.reg_max
-        )
+        self.loss = YOLOLoss(loss_cfg, vec2box, class_num=cfg.dataset.class_num, reg_max=cfg.model.anchor.reg_max)
         self.iou_rate = loss_cfg.objective["BoxLoss"]
         self.dfl_rate = loss_cfg.objective["DFLoss"]
         self.cls_rate = loss_cfg.objective["BCELoss"]
