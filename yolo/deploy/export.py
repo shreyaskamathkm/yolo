@@ -53,7 +53,7 @@ class ModelExporter:
             ValueError: If an unsupported export format is requested.
         """
         stem = Path(self.cfg.weight).stem
-        output_dir = Path(self.cfg.task.output_dir)
+        output_dir = Path(self.cfg.out_path)
         output_dir.mkdir(parents=True, exist_ok=True)
         for fmt in self.cfg.task.formats:
             backend_cls = _EXPORTERS.get(fmt)

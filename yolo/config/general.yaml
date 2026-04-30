@@ -20,3 +20,11 @@ use_tensorboard: False
 task_type: detection
 
 weight: True # Path to weight or True for auto, False for no pretrained weight
+
+model:
+  compile:
+    enabled: True
+    mode: default
+    fullgraph: False
+    dynamic: False
+    backend: inductor

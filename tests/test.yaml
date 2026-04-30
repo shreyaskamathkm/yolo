@@ -5,11 +5,15 @@ hydra:
 name: test
 
 defaults:
-  - _self_
   - task: inference
   - dataset: mock
   - model: v9-s
   - general
+  - _self_
 
 task:
   backend: torch
+
+model:
+  compile:
+    enabled: False
