@@ -1,5 +1,3 @@
-# TODO Phase 2: update imports — schemas from yolo.config.schemas.training,
-#               lerp from yolo.training.optim
 from math import exp
 from typing import Optional
 
