@@ -24,6 +24,7 @@ with additional tooling, documentation, and fixes focused on practical usability
 | 🧹 Cleaner codebase | Refactored for readability and long-term maintainability |
 | 🚀 Versioned releases | 12 tagged releases (v0.1 → v0.4.0) with changelogs |
 | ⚙️ CI/CD pipeline | Integration tests, Docker publish, and automated release workflows |
+| 🔥 Torch Compile | Robust `torch.compile` support with automatic checkpoint cleaning and EMA integration |
 ## TL;DR
 
 This is an MIT-licensed YOLO implementation. Install and run in two commands:

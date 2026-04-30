@@ -136,48 +136,63 @@ class YOLO(nn.Module):
         else:
             raise ValueError(f"Unsupported layer type: {layer_type}")
 
-    def save_load_weights(self, weights: Union[Path, OrderedDict], weight_key: str = "state_dict"):
+    def save_load_weights(self, weights: Union[Path, dict], weight_key: str = "state_dict"):
         """
         Update the model's weights with the provided weights.
 
-        args:
-            weights: A OrderedDict containing the new weights.
+        Args:
+            weights: A path to a weights file or a dictionary containing the weights.
+            weight_key: The key to look for in the weights dictionary.
         """
-        if isinstance(weights, Path):
+        if isinstance(weights, (str, Path)):
             weights = torch.load(weights, map_location=torch.device("cpu"), weights_only=False)
+
+        # Extract state_dict from checkpoint
         if weight_key in weights:
-            weights = {name.removeprefix("model.model."): key for name, key in weights[weight_key].items()}
+            loaded_dict = weights[weight_key]
         elif "state_dict" in weights:
-            if weight_key != "state_dict":
-                logger.warning(f":warning: {weight_key} is unavailable, falling back to state_dict")
-            weights = {name.removeprefix("model.model."): key for name, key in weights["state_dict"].items()}
-        model_state_dict = self.model.state_dict()
+            logger.warning(f"⚠️ Key '{weight_key}' not found, falling back to 'state_dict'")
+            loaded_dict = weights["state_dict"]
+        else:
+            loaded_dict = weights
 
-        # TODO1: autoload old version weight
-        # TODO2: weight transform if num_class difference
+        # Clean prefixes from loaded weights
+        from yolo.utils.module_utils import clean_state_dict
 
-        error_dict = {"Mismatch": set(), "Not Found": set()}
-        for model_key, model_weight in model_state_dict.items():
-            if model_key not in weights:
-                error_dict["Not Found"].add(tuple(model_key.split(".")[:-2]))
-                continue
-            if model_weight.shape != weights[model_key].shape:
-                error_dict["Mismatch"].add(tuple(model_key.split(".")[:-2]))
-                continue
-            model_state_dict[model_key] = weights[model_key]
+        loaded_dict = clean_state_dict(loaded_dict)
 
-        for error_name, error_set in error_dict.items():
-            error_dict = dict()
-            for layer_idx, *layer_name in error_set:
-                if layer_idx not in error_dict:
-                    error_dict[layer_idx] = [".".join(layer_name)]
-                else:
-                    error_dict[layer_idx].append(".".join(layer_name))
-            for layer_idx, layer_name in error_dict.items():
-                layer_name.sort()
-                logger.warning(f":warning: Weight {error_name} for Layer {layer_idx}: {', '.join(layer_name)}")
+        # Prepare target state_dict
+        new_state_dict = self.model.state_dict()
 
-        self.model.load_state_dict(model_state_dict, strict=True)
+        # Match keys robustly
+        matched_keys = 0
+        for model_key in new_state_dict.keys():
+            # Try exact match, then try removing 'model.' prefix if present in loaded_dict
+            search_keys = [model_key, f"model.{model_key}", f"model.model.{model_key}"]
+            found = False
+            for k in search_keys:
+                if k in loaded_dict:
+                    if new_state_dict[model_key].shape == loaded_dict[k].shape:
+                        new_state_dict[model_key] = loaded_dict[k]
+                        matched_keys += 1
+                        found = True
+                        break
+                    else:
+                        logger.warning(
+                            f"⚠️ Shape mismatch for {model_key}: "
+                            f"expected {new_state_dict[model_key].shape}, "
+                            f"got {loaded_dict[k].shape}"
+                        )
+
+            if not found:
+                logger.debug(f"ℹ️ Layer {model_key} not found in loaded weights")
+
+        if matched_keys == 0:
+            logger.error("❌ No weights were matched! Check your weight_key or model configuration.")
+        else:
+            logger.info(f"✅ Successfully matched {matched_keys}/{len(new_state_dict)} weight tensors")
+
+        self.model.load_state_dict(new_state_dict, strict=True)
 
 
 def create_model(

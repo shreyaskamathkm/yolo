@@ -1,5 +1,5 @@
 import inspect
-from typing import Tuple, Union
+from typing import List, Tuple, Union
 
 import torch
 from torch import Tensor, nn
@@ -18,13 +18,47 @@ def unwrap_model(module: torch.nn.Module) -> torch.nn.Module:
     while True:
         if isinstance(module, torch._dynamo.eval_frame.OptimizedModule):
             module = module._orig_mod
-        elif isinstance(module, (
-            torch.nn.parallel.DistributedDataParallel,
-            torch.nn.parallel.DataParallel,
-        )):
+        elif isinstance(
+            module,
+            (
+                torch.nn.parallel.DistributedDataParallel,
+                torch.nn.parallel.DataParallel,
+            ),
+        ):
             module = module.module
         else:
             return module
+
+
+def clean_state_dict(state_dict: dict) -> dict:
+    """
+    Remove torch.compile prefixes from state_dict keys.
+    'model._orig_mod.conv.weight' -> 'model.conv.weight'
+    """
+    new_state_dict = {}
+    for k, v in state_dict.items():
+        new_key = k.replace("_orig_mod.", "").replace("_orig_model.", "")
+        new_state_dict[new_key] = v
+    return new_state_dict
+
+
+def restore_compile_prefix(state_dict: dict, prefixes: Union[str, List[str]] = ["model.", "ema."]) -> dict:
+    """
+    Restore torch.compile prefixes to state_dict keys.
+    'model.conv.weight' -> 'model._orig_mod.conv.weight'
+    'ema.model.conv.weight' -> 'ema._orig_mod.model.conv.weight'
+    """
+    if isinstance(prefixes, str):
+        prefixes = [prefixes]
+    new_state_dict = {}
+    for k, v in state_dict.items():
+        new_key = k
+        for prefix in prefixes:
+            if k.startswith(prefix) and "_orig_mod." not in k:
+                new_key = k.replace(prefix, f"{prefix}_orig_mod.", 1)
+                break
+        new_state_dict[new_key] = v
+    return new_state_dict
 
 
 def get_layer_map():

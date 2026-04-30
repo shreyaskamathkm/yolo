@@ -2,7 +2,7 @@ name: v9-t
 
 anchor:
   reg_max: 16
-  strides: [8, 16, 32]  
+  strides: [8, 16, 32]
 
 model:
   backbone:

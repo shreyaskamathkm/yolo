@@ -43,6 +43,13 @@ resume: /path/to/checkpoint.ckpt  # Resume from specific checkpoint
 !!! tip
     Checkpoints are saved in the experiment directory under `lightning_logs/version_X/checkpoints/`.
 
+### Torch Compile Support
+
+The codebase supports `torch.compile` for faster training. When compilation is enabled, the system automatically handles the `_orig_mod.` prefix issues:
+- **Save**: Checkpoints are automatically cleaned of compilation prefixes, making them compatible with non-compiled models.
+- **Load**: When resuming, the system intelligently restores the necessary prefixes if the current model is compiled.
+- **Strict Matching**: Weight loading uses `strict=True` while maintaining robustness through a smart key-matching algorithm.
+
 ### Gradient Accumulation
 
 `GradientAccumulation` is a Lightning callback that automatically scales `accumulate_grad_batches` to match `equivalent_batch_size`. During warmup epochs the accumulation count ramps linearly from 1 up to the target, then holds constant.
@@ -95,6 +102,9 @@ ema:
   enable: true
   decay: 0.9999
 ```
+
+!!! note
+    EMA shadow weights are also automatically cleaned of any compilation prefixes, ensuring they can be saved and loaded across different execution environments seamlessly.
 
 ## Validation Model
 

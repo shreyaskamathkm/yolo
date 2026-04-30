@@ -10,7 +10,7 @@ from lightning.pytorch.callbacks import Callback
 from yolo.config.config import DataConfig, SchedulerConfig
 from yolo.training.optim import lerp
 from yolo.utils.logger import logger
-from yolo.utils.module_utils import unwrap_model
+from yolo.utils.module_utils import clean_state_dict, unwrap_model
 
 
 class EMA(Callback):
@@ -118,9 +118,13 @@ class EMA(Callback):
         self.batch_count = checkpoint.get("ema_batch_count", 0)
         if self._CHECKPOINT_KEY not in checkpoint:
             return
+
         model = unwrap_model(pl_module.model)
         target_device = next(model.parameters()).device
-        self.shadow = {k: v.detach().clone().to(target_device) for k, v in checkpoint[self._CHECKPOINT_KEY].items()}
+
+        # Robustly load shadow weights, cleaning any potential prefixes
+        loaded_shadow = clean_state_dict(checkpoint[self._CHECKPOINT_KEY])
+        self.shadow = {k: v.detach().clone().to(target_device) for k, v in loaded_shadow.items()}
 
 
 class GradientAccumulation(Callback):
