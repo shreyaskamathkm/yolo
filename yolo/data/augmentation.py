@@ -19,12 +19,12 @@ class AugmentationComposer:
             if hasattr(transform, "set_parent"):
                 transform.set_parent(self)
 
-    def __call__(self, image, boxes=torch.zeros(0, 5)):
+    def __call__(self, image, boxes=torch.zeros(0, 5), masks=None):
         for transform in self.transforms:
-            image, boxes = transform(image, boxes)
-        image, boxes, rev_tensor = self.pad_resize(image, boxes)
+            image, boxes, masks = transform(image, boxes, masks)
+        image, boxes, masks, rev_tensor = self.pad_resize(image, boxes, masks)
         image = TF.to_tensor(image)
-        return image, boxes, rev_tensor
+        return image, boxes, masks, rev_tensor
 
 
 class RemoveOutliers:
@@ -37,20 +37,23 @@ class RemoveOutliers:
         """
         self.min_box_area = min_box_area
 
-    def __call__(self, image, boxes):
+    def __call__(self, image, boxes, masks=None):
         """
         Args:
             image (PIL.Image): The cropped image.
             boxes (torch.Tensor): Bounding boxes in normalized coordinates (x_min, y_min, x_max, y_max).
+            masks (Optional[List[Tensor]]): Segmentation polygons.
         Returns:
             PIL.Image: The input image (unchanged).
             torch.Tensor: Filtered bounding boxes.
+            Optional[List[Tensor]]: Filtered masks (currently just returns original).
         """
         box_areas = (boxes[:, 3] - boxes[:, 1]) * (boxes[:, 4] - boxes[:, 2])
 
         valid_boxes = (box_areas > self.min_box_area) & (boxes[:, 3] > boxes[:, 1]) & (boxes[:, 4] > boxes[:, 2])
 
-        return image, boxes[valid_boxes]
+        # TODO: Filter masks based on valid_boxes if needed
+        return image, boxes[valid_boxes], masks
 
 
 class PadAndResize:
@@ -62,7 +65,7 @@ class PadAndResize:
     def set_size(self, image_size: List[int]):
         self.target_width, self.target_height = image_size
 
-    def __call__(self, image: Image, boxes):
+    def __call__(self, image: Image, boxes, masks=None):
         img_width, img_height = image.size
         scale = min(self.target_width / img_width, self.target_height / img_height)
         new_width, new_height = int(img_width * scale), int(img_height * scale)
@@ -77,8 +80,13 @@ class PadAndResize:
         boxes[:, [1, 3]] = (boxes[:, [1, 3]] * new_width + pad_left) / self.target_width
         boxes[:, [2, 4]] = (boxes[:, [2, 4]] * new_height + pad_top) / self.target_height
 
+        if masks is not None:
+            for mask in masks:
+                mask[1::2] = (mask[1::2] * new_width + pad_left) / self.target_width
+                mask[2::2] = (mask[2::2] * new_height + pad_top) / self.target_height
+
         transform_info = torch.tensor([scale, pad_left, pad_top, pad_left, pad_top])
-        return padded_image, boxes, transform_info
+        return padded_image, boxes, masks, transform_info
 
 
 class HorizontalFlip:
@@ -87,11 +95,14 @@ class HorizontalFlip:
     def __init__(self, prob=0.5):
         self.prob = prob
 
-    def __call__(self, image, boxes):
+    def __call__(self, image, boxes, masks=None):
         if torch.rand(1) < self.prob:
             image = TF.hflip(image)
             boxes[:, [1, 3]] = 1 - boxes[:, [3, 1]]
-        return image, boxes
+            if masks is not None:
+                for mask in masks:
+                    mask[1::2] = 1 - mask[1::2]
+        return image, boxes, masks
 
 
 class VerticalFlip:
@@ -100,11 +111,14 @@ class VerticalFlip:
     def __init__(self, prob=0.5):
         self.prob = prob
 
-    def __call__(self, image, boxes):
+    def __call__(self, image, boxes, masks=None):
         if torch.rand(1) < self.prob:
             image = TF.vflip(image)
             boxes[:, [2, 4]] = 1 - boxes[:, [4, 2]]
-        return image, boxes
+            if masks is not None:
+                for mask in masks:
+                    mask[2::2] = 1 - mask[2::2]
+        return image, boxes, masks
 
 
 class Mosaic:
@@ -117,9 +131,10 @@ class Mosaic:
     def set_parent(self, parent):
         self.parent = parent
 
-    def __call__(self, image, boxes):
-        if torch.rand(1) >= self.prob:
-            return image, boxes
+    def __call__(self, image, boxes, masks=None):
+        if torch.rand(1) >= self.prob or masks is not None:
+            # Mosaic currently does not support masks, skip if masks are present
+            return image, boxes, masks
 
         assert self.parent is not None, "Parent is not set. Mosaic cannot retrieve image size."
 
@@ -148,7 +163,7 @@ class Mosaic:
 
         all_labels = torch.cat(all_labels, dim=0)
         mosaic_image = mosaic_image.resize((img_sz, img_sz))
-        return mosaic_image, all_labels
+        return mosaic_image, all_labels, masks
 
 
 class MixUp:
@@ -163,9 +178,10 @@ class MixUp:
         """Set the parent dataset object for accessing dataset methods."""
         self.parent = parent
 
-    def __call__(self, image, boxes):
-        if torch.rand(1) >= self.prob:
-            return image, boxes
+    def __call__(self, image, boxes, masks=None):
+        if torch.rand(1) >= self.prob or masks is not None:
+            # MixUp currently does not support masks
+            return image, boxes, masks
 
         assert self.parent is not None, "Parent is not set. MixUp cannot retrieve additional data."
 
@@ -182,7 +198,7 @@ class MixUp:
         # Merge bounding boxes
         merged_boxes = torch.cat((boxes, boxes2))
 
-        return TF.to_pil_image(mixed_image), merged_boxes
+        return TF.to_pil_image(mixed_image), merged_boxes, masks
 
 
 class RandomCrop:
@@ -195,7 +211,7 @@ class RandomCrop:
         """
         self.prob = prob
 
-    def __call__(self, image, boxes):
+    def __call__(self, image, boxes, masks=None):
         if torch.rand(1) < self.prob:
             original_width, original_height = image.size
             crop_height, crop_width = original_height // 2, original_width // 2
@@ -213,4 +229,10 @@ class RandomCrop:
             boxes[:, [1, 3]] /= crop_width
             boxes[:, [2, 4]] /= crop_height
 
-        return image, boxes
+            if masks is not None:
+                for mask in masks:
+                    mask[1::2] = (mask[1::2] * original_width - left) / crop_width
+                    mask[2::2] = (mask[2::2] * original_height - top) / crop_height
+                    # TODO: Clip masks to [0, 1] if needed
+
+        return image, boxes, masks

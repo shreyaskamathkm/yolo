@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional, Union, Any
 
 
 @dataclass
@@ -18,7 +18,13 @@ class DatasetConfig:
     path: str
     class_num: int
     class_list: List[str]
-    auto_download: Optional[DownloadOptions]
+    auto_download: Optional[Dict[str, Any]] = None
+    train: Optional[str] = None
+    validation: Optional[str] = None
+    test: Optional[str] = None
+
+    def get(self, key, default=None):
+        return getattr(self, key, default)
 
 
 @dataclass
@@ -29,7 +35,7 @@ class DataConfig:
     dataloader_workers: int
     image_size: List[int]
     data_augment: Dict[str, int]
-    source: Optional[Union[str, int]]
-    dynamic_shape: Optional[bool]
+    source: Optional[Union[str, int]] = None
+    dynamic_shape: Optional[bool] = False
     equivalent_batch_size: Optional[int] = 64
     drop_last: bool = True

@@ -11,13 +11,19 @@ from yolo.model.builder import YOLO
 from yolo.utils.logger import logger
 
 
+def get_color(idx: int):
+    """Generates a consistent, bright color for a given index."""
+    random.seed(idx)
+    return tuple(random.randint(50, 255) for _ in range(3))
+
+
 def draw_bboxes(
     img: Union[Image.Image, torch.Tensor],
     bboxes: List[List[Union[int, float]]],
     *,
     idx2label: Optional[list] = None,
 ) -> Image.Image:
-    """Draws bounding boxes and labels onto an image.
+    """Draws bounding boxes and labels onto an image with a premium look.
 
     Args:
         img (Union[Image.Image, torch.Tensor]): The input image.
@@ -30,49 +36,123 @@ def draw_bboxes(
         Image.Image: The image with boxes and labels drawn.
     """
 
-    # Convert tensor image to PIL Image if necessary
     if isinstance(img, torch.Tensor):
-        if img.dim() > 3:
-            logger.warning("🔍 >3 dimension tensor detected, using the 0-idx image.")
+        if img.dim() == 4:
             img = img[0]
-        img = to_pil_image(img)
+        img = to_pil_image(img.cpu())
 
-    if isinstance(bboxes, list) or bboxes.ndim == 3:
-        bboxes = bboxes[0]
+    if isinstance(bboxes, torch.Tensor):
+        bboxes = bboxes.cpu().tolist()
 
-    img = img.copy()
-    label_size = img.size[1] / 30
-    draw = ImageDraw.Draw(img, "RGBA")
+    img = img.convert("RGBA")
+    overlay = Image.new("RGBA", img.size, (0, 0, 0, 0))
+    draw = ImageDraw.Draw(overlay)
+    width, height = img.size
+    font_size = max(12, int(min(width, height) * 0.02))
 
     try:
-        font = ImageFont.truetype("arial.ttf", int(label_size))
+        font = ImageFont.truetype("arial.ttf", font_size)
     except IOError:
-        font = ImageFont.load_default(int(label_size))
+        font = ImageFont.load_default()
 
     for bbox in bboxes:
-        class_id, x_min, y_min, x_max, y_max, *conf = [float(val) for val in bbox]
-        x_min, x_max = min(x_min, x_max), max(x_min, x_max)
-        y_min, y_max = min(y_min, y_max), max(y_min, y_max)
-        bbox = [(x_min, y_min), (x_max, y_max)]
+        if len(bbox) < 5:
+            continue
+        class_id, x1, y1, x2, y2, *conf = [float(val) for val in bbox]
+        if class_id < 0:
+            continue
 
-        random.seed(int(class_id))
-        color_map = (random.randint(0, 200), random.randint(0, 200), random.randint(0, 200))
+        color = get_color(int(class_id))
+        # Draw solid outline on the main image for sharpness
+        outline_draw = ImageDraw.Draw(img)
+        outline_draw.rectangle([x1, y1, x2, y2], outline=(*color, 255), width=2)
 
-        draw.rounded_rectangle(bbox, outline=(*color_map, 200), radius=5, width=2)
-        draw.rounded_rectangle(bbox, fill=(*color_map, 100), radius=5)
+        # Draw translucent fill on the overlay
+        draw.rectangle([x1, y1, x2, y2], fill=(*color, 60))
 
-        class_text = str(idx2label[int(class_id)] if idx2label else int(class_id))
-        label_text = f"{class_text}" + (f" {conf[0]: .0%}" if conf else "")
+        class_name = idx2label[int(class_id)] if idx2label else f"ID {int(class_id)}"
+        label = f"{class_name}" + (f" {conf[0]:.2f}" if conf else "")
 
-        text_bbox = font.getbbox(label_text)
-        text_width = text_bbox[2] - text_bbox[0]
-        text_height = (text_bbox[3] - text_bbox[1]) * 1.5
+        # Draw label box on the main image
+        tw, th = outline_draw.textbbox((0, 0), label, font=font)[2:]
+        outline_draw.rectangle([x1, y1 - th, x1 + tw + 4, y1], fill=(*color, 255))
+        outline_draw.text((x1 + 2, y1 - th), label, fill="white", font=font)
 
-        text_background = [(x_min, y_min), (x_min + text_width, y_min + text_height)]
-        draw.rounded_rectangle(text_background, fill=(*color_map, 175), radius=2)
-        draw.text((x_min, y_min), label_text, fill="white", font=font)
+    # Combine the main image and the translucent overlay
+    combined = Image.alpha_composite(img, overlay)
+    return combined.convert("RGB")
 
-    return img
+
+def draw_masks(
+    img: Union[Image.Image, torch.Tensor],
+    masks: List[torch.Tensor],
+    *,
+    idx2label: Optional[list] = None,
+    alpha: float = 0.4,
+) -> Image.Image:
+    """Draws segmentation masks and labels with a premium MMDetection-style look.
+
+    Args:
+        img (Union[Image.Image, torch.Tensor]): The input image.
+        masks (List[torch.Tensor]): List of tensors, each [class_id, x1, y1, x2, y2, ...].
+        idx2label (Optional[list]): Mapping from class ID to label name.
+        alpha (float): Transparency of the mask overlay.
+
+    Returns:
+        Image.Image: The image with masks and labels drawn.
+    """
+    if isinstance(img, torch.Tensor):
+        if img.dim() == 4:
+            img = img[0]
+        img = to_pil_image(img.cpu())
+
+    img = img.convert("RGBA")
+    overlay = Image.new("RGBA", img.size, (0, 0, 0, 0))
+    draw = ImageDraw.Draw(overlay)
+    outline_draw = ImageDraw.Draw(img)
+
+    width, height = img.size
+    font_size = max(14, int(min(width, height) * 0.025))
+    try:
+        font = ImageFont.truetype("arial.ttf", font_size)
+    except IOError:
+        font = ImageFont.load_default()
+
+    for mask in masks:
+        if mask.numel() < 3:
+            continue
+        mask = mask.cpu()
+        class_id = int(mask[0])
+        points = mask[1:].reshape(-1, 2).tolist()
+        points = [(p[0] * width, p[1] * height) if max(p) <= 1.01 else (p[0], p[1]) for p in points]
+
+        if len(points) < 3:
+            continue
+
+        color = get_color(class_id)
+
+        # Draw semi-transparent mask
+        draw.polygon(points, fill=(*color, int(255 * alpha)))
+
+        # Draw sharp white outline for that premium look
+        outline_draw.polygon(points, outline=(255, 255, 255, 200), width=2)
+
+        # Draw label at the top-most point of the mask
+        min_y = min(p[1] for p in points)
+        top_point = sorted([p for p in points if p[1] == min_y], key=lambda x: x[0])[0]
+
+        class_name = idx2label[int(class_id)] if idx2label else f"ID {int(class_id)}"
+        tw, th = outline_draw.textbbox((0, 0), class_name, font=font)[2:]
+
+        # Label background
+        lx, ly = top_point[0], top_point[1] - th - 2
+        outline_draw.rectangle([lx, ly, lx + tw + 6, ly + th + 2], fill=(0, 0, 0, 180))
+        outline_draw.text((lx + 3, ly), class_name, fill="white", font=font)
+
+    # Combine overlay and original image
+    combined = Image.alpha_composite(img, overlay)
+    return combined.convert("RGB")
+
 
 
 def draw_model(*, model_cfg: ModelConfig = None, model: YOLO = None, v7_base=False):

@@ -82,7 +82,7 @@ class DetectionValidateModel(BaseModel):
         return self.val_loader
 
     def validation_step(self, batch, batch_idx):
-        batch_size, images, targets, rev_tensor, img_paths = batch
+        images, targets = batch.images, batch.targets
         H, W = images.shape[2:]
         predicts = self.post_process(self.model(images), image_size=[W, H])
         mAP = self.metric(
@@ -127,7 +127,7 @@ class DetectionTrainModel(DetectionValidateModel):
         self.vec2box.update(self.cfg.image_size)
 
     def training_step(self, batch, batch_idx):
-        batch_size, images, targets, *_ = batch
+        images, targets = batch.images, batch.targets
         predicts = self(images)
         aux_predicts = self.vec2box(predicts["AUX"])
         main_predicts = self.vec2box(predicts["Main"])
@@ -137,10 +137,10 @@ class DetectionTrainModel(DetectionValidateModel):
             logger=True,
             prog_bar=True,
             on_epoch=True,
-            batch_size=batch_size,
+            batch_size=batch.batch_size,
             rank_zero_only=True,
         )
-        return loss * batch_size * self.trainer.world_size
+        return loss * batch.batch_size * self.trainer.world_size
 
     def configure_optimizers(self):
         optimizer = create_optimizer(self.model, self.cfg.task.optimizer)

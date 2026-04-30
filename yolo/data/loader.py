@@ -14,10 +14,11 @@ from torch.utils.data import DataLoader
 
 from yolo.config.config import DataConfig, DatasetConfig
 from yolo.data.augmentation import AugmentationComposer
-from yolo.data.dataset import YoloDataset, collate_fn
+from yolo.data.collate import collate_fn
+from yolo.data.datasets import DATASETS
 from yolo.data.preparation import prepare_dataset
+from yolo.utils.logger import logger
 
-# Sentinel to signal end-of-source cleanly (avoids timeout-based StopIteration)
 _STREAM_DONE = object()
 _STREAM_SOURCE = ("rtmp://", "rtsp://", "http://", "https://")
 
@@ -205,17 +206,19 @@ class StreamDataLoader:
 
 
 def create_dataloader(
-    data_cfg: DataConfig, dataset_cfg: DatasetConfig, task: str = "train"
+    data_cfg: DataConfig, dataset_cfg: DatasetConfig, task: str = "detect", split: str = "train"
 ) -> Union[StreamDataLoader, DataLoader]:
     """Factory function to create the appropriate data loader based on the task.
 
     For inference tasks, it returns a `StreamDataLoader`. For training and validation,
-    it returns a standard PyTorch `DataLoader` wrapping the `YoloDataset`.
+    it returns a standard PyTorch `DataLoader` wrapping the appropriate dataset class.
 
     Args:
         data_cfg (DataConfig): Data-specific configuration (batch size, source, etc.).
         dataset_cfg (DatasetConfig): Dataset-specific configuration (classes, paths).
-        task (str, optional): The current task ('train', 'validation', or 'inference').
+        task (str, optional): The current task ('detect' or 'segment').
+            Defaults to "detect".
+        split (str, optional): The dataset split to use (e.g., 'train', 'validation').
             Defaults to "train".
 
     Returns:
@@ -226,8 +229,27 @@ def create_dataloader(
         return StreamDataLoader(data_cfg)
 
     if getattr(dataset_cfg, "auto_download", False):
-        prepare_dataset(dataset_cfg, task)
-    dataset = YoloDataset(data_cfg, dataset_cfg, task)
+        prepare_dataset(dataset_cfg, split)
+
+    # 1. Determine label format from split path
+    label_path = dataset_cfg.get(split, split)
+    label_format = "json" if str(label_path).endswith(".json") else "txt"
+
+    # 2. Dataset Factory: Select the appropriate class from registry
+    dataset_key = f"{task}_{label_format}"
+    dataset_class = DATASETS.get(dataset_key)
+
+    if dataset_class is None:
+        raise ValueError(
+            f"No dataset registered for '{dataset_key}'. " f"Available: {list(DATASETS.module_dict.keys())}"
+        )
+
+    dataset = dataset_class(
+        dataset_path=Path(dataset_cfg.path),
+        phase=split,
+        data_cfg=data_cfg,
+        dataset_cfg=dataset_cfg,
+    )
 
     return DataLoader(
         dataset,
