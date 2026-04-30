@@ -14,6 +14,9 @@ yolo task=train use_wandb=True use_tensorboard=True name=my_experiment
 
 # Multi-GPU Training (DDP)
 torchrun --nproc_per_node=2 -m yolo task=train device=[0,1]
+
+# Training with torch.compile enabled
+yolo task=train model.compile.enabled=True
 ```
 
 ### Inference

@@ -2,9 +2,12 @@ defaults:
   - task: export
   - dataset: coco
   - model: v9-t
+  - general
   - _self_
 
 weight: runs/train/v9-dev/checkpoints/epoch_00_map_0.64.ckpt
 image_size: [640, 640]
-task:
-  output_dir: exports/v9-t_test/
+out_path: exports/v9-t_test/
+model:
+  compile:
+    enabled: False

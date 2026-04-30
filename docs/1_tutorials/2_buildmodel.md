@@ -26,6 +26,20 @@ model = create_model(cfg.model, class_num=cfg.dataset.class_num, weight_path=cfg
 model = model.to(device)
 ```
 
+## Torch Compile
+
+You can enable `torch.compile` directly in the model configuration. This can significantly speed up training and inference on supported hardware.
+
+```yaml
+model:
+  compile:
+    enabled: true
+    backend: inductor  # default
+    mode: default      # default
+```
+
+When enabled, the model is wrapped in an `OptimizedModule`. The system's internal utilities (like `unwrap_model`) ensure that features like EMA and weight loading continue to work correctly.
+
 ## Deploy Model
 
 Optimizes the model for inference by stripping auxiliary branches and loading it into a specialized backend (Torch, ONNX, or TensorRT).

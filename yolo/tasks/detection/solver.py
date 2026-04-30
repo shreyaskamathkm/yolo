@@ -19,6 +19,11 @@ from yolo.tasks.registry import register
 from yolo.training.optim import create_optimizer, create_scheduler
 from yolo.utils.drawer import draw_bboxes
 from yolo.utils.model_utils import PostProcess
+from yolo.utils.module_utils import (
+    clean_state_dict,
+    restore_compile_prefix,
+    unwrap_model,
+)
 
 
 class BaseModel(LightningModule):
@@ -29,6 +34,17 @@ class BaseModel(LightningModule):
 
     def forward(self, x):
         return self.model(x)
+
+    def on_save_checkpoint(self, checkpoint: dict) -> None:
+        """Strip torch.compile prefixes from state_dict when saving."""
+        checkpoint["state_dict"] = clean_state_dict(checkpoint["state_dict"])
+
+    def on_load_checkpoint(self, checkpoint: dict) -> None:
+        """Add _orig_mod prefix to state_dict when loading if model is compiled."""
+        if hasattr(self.model, "_orig_mod"):
+            checkpoint["state_dict"] = restore_compile_prefix(checkpoint["state_dict"])
+        else:
+            checkpoint["state_dict"] = clean_state_dict(checkpoint["state_dict"])
 
 
 @register("detection", "validation")
@@ -52,7 +68,6 @@ class DetectionValidateModel(BaseModel):
         self.metric = MeanAveragePrecision(iou_type="bbox", box_format="xyxy", backend="faster_coco_eval")
         self.metric.warn_on_many_detections = False
         self.val_loader = create_dataloader(self.validation_cfg.data, self.cfg.dataset, self.validation_cfg.task)
-        self.ema = self.model
 
     def setup(self, stage):
         self.vec2box = create_converter(
@@ -66,7 +81,7 @@ class DetectionValidateModel(BaseModel):
     def validation_step(self, batch, batch_idx):
         batch_size, images, targets, rev_tensor, img_paths = batch
         H, W = images.shape[2:]
-        raw_predicts = self.ema(images)
+        raw_predicts = self.model(images)
         predicts = self.post_process(raw_predicts, image_size=[W, H])
 
         if hasattr(self, "loss_fn"):
@@ -148,7 +163,7 @@ class DetectionTrainModel(DetectionValidateModel):
             batch_size=batch_size,
             rank_zero_only=True,
         )
-        return loss
+        return loss * batch_size * self.trainer.world_size
 
     def configure_optimizers(self):
         optimizer = create_optimizer(self.model, self.cfg.task.optimizer)
