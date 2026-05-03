@@ -140,7 +140,7 @@ class DetectionTrainModel(DetectionValidateModel):
             batch_size=batch.batch_size,
             rank_zero_only=True,
         )
-        return loss * batch.batch_size * self.trainer.world_size
+        return loss
 
     def configure_optimizers(self):
         optimizer = create_optimizer(self.model, self.cfg.task.optimizer)

@@ -2,7 +2,7 @@ from typing import List
 
 import torch
 
-from yolo.data.base import Batch, Sample
+from yolo.data.schema import Batch, Sample
 
 
 def collate_fn(batch: List[Sample]) -> Batch:

@@ -13,6 +13,7 @@ data:
   dataloader_workers: 4
   shuffle: True
   pin_memory: True
+  redo_cache: true
   data_augment:
     Mosaic: 1
     # MixUp: 1

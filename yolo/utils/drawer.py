@@ -154,7 +154,6 @@ def draw_masks(
     return combined.convert("RGB")
 
 
-
 def draw_model(*, model_cfg: ModelConfig = None, model: YOLO = None, v7_base=False):
     """Generates a graphviz visualization of the model architecture.
 

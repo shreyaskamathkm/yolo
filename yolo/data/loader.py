@@ -231,12 +231,8 @@ def create_dataloader(
     if getattr(dataset_cfg, "auto_download", False):
         prepare_dataset(dataset_cfg, split)
 
-    # 1. Determine label format from split path
-    label_path = dataset_cfg.get(split, split)
-    label_format = "json" if str(label_path).endswith(".json") else "txt"
-
-    # 2. Dataset Factory: Select the appropriate class from registry
-    dataset_key = f"{task}_{label_format}"
+    # 1. Dataset Factory: Select the appropriate class from registry
+    dataset_key = f"{task}_{dataset_cfg.type}"
     dataset_class = DATASETS.get(dataset_key)
 
     if dataset_class is None:
@@ -249,6 +245,7 @@ def create_dataloader(
         phase=split,
         data_cfg=data_cfg,
         dataset_cfg=dataset_cfg,
+        task=task,
     )
 
     return DataLoader(

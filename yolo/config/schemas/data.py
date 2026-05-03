@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Union, Any
+from typing import Any, Dict, List, Optional, Union
 
 
 @dataclass
@@ -18,6 +18,7 @@ class DatasetConfig:
     path: str
     class_num: int
     class_list: List[str]
+    type: str = "coco"
     auto_download: Optional[Dict[str, Any]] = None
     train: Optional[str] = None
     validation: Optional[str] = None
@@ -39,3 +40,4 @@ class DataConfig:
     dynamic_shape: Optional[bool] = False
     equivalent_batch_size: Optional[int] = 64
     drop_last: bool = True
+    redo_cache: bool = False
