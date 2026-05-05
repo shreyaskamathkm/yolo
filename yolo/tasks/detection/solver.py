@@ -11,6 +11,7 @@ from torchmetrics.detection import MeanAveragePrecision
 
 from yolo.config.config import Config
 from yolo.data.loader import create_dataloader
+from yolo.data.schema import DataSplitType, TrainerTaskType
 from yolo.deploy import create_inference_backend
 from yolo.model.builder import create_model
 from yolo.tasks.detection.loss import create_loss_function
@@ -70,7 +71,9 @@ class DetectionValidateModel(BaseModel):
             self.validation_cfg = self.cfg.task.validation
         self.metric = MeanAveragePrecision(iou_type="bbox", box_format="xyxy", backend="faster_coco_eval")
         self.metric.warn_on_many_detections = False
-        self.val_loader = create_dataloader(self.validation_cfg.data, self.cfg.dataset, self.validation_cfg.task)
+        self.val_loader = create_dataloader(
+            cfg.task.data, cfg.dataset, task=TrainerTaskType.DETECTION, split=DataSplitType.VAL
+        )
 
     def setup(self, stage):
         self.vec2box = create_converter(
@@ -114,7 +117,9 @@ class DetectionTrainModel(DetectionValidateModel):
 
         super().__init__(cfg)
         self.cfg = cfg
-        self.train_loader = create_dataloader(self.cfg.task.data, self.cfg.dataset, self.cfg.task.task)
+        self.train_loader = create_dataloader(
+            self.cfg.task.data, self.cfg.dataset, task=TrainerTaskType.DETECTION, split=DataSplitType.TRAIN
+        )
 
     def setup(self, stage):
         super().setup(stage)
@@ -188,7 +193,7 @@ class DetectionInferenceModel(LightningModule):
         super().__init__()
         self.cfg = cfg
         self.model = create_inference_backend(cfg.task.backend, self.cfg.weight, str(self.device), self.cfg)
-        self.predict_loader = create_dataloader(cfg.task.data, cfg.dataset, cfg.task.task)
+        self.predict_loader = create_dataloader(cfg.task.data, cfg.dataset, task=TrainerTaskType.INFERENCE)
         self.last_time = time.time()
         self.video_writer = None
         self.current_video_path = None

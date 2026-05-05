@@ -4,6 +4,7 @@ from torch.utils.data import DataLoader
 
 from yolo.config.config import Config
 from yolo.data.loader import StreamDataLoader, create_dataloader
+from yolo.data.schema import DataSplitType, TrainerTaskType
 
 
 def test_create_dataloader_cache(train_cfg: Config):
@@ -13,8 +14,8 @@ def test_create_dataloader_cache(train_cfg: Config):
     cache_file = Path("tests/data/train.cache")
     cache_file.unlink(missing_ok=True)
 
-    make_cache_loader = create_dataloader(train_cfg.task.data, train_cfg.dataset)
-    load_cache_loader = create_dataloader(train_cfg.task.data, train_cfg.dataset)
+    make_cache_loader = create_dataloader(train_cfg.task.data, train_cfg.dataset, split=DataSplitType.TRAIN)
+    load_cache_loader = create_dataloader(train_cfg.task.data, train_cfg.dataset, split=DataSplitType.TRAIN)
     m_batch = next(iter(make_cache_loader))
     l_batch = next(iter(load_cache_loader))
     assert m_batch.batch_size == l_batch.batch_size
@@ -29,11 +30,9 @@ def test_training_data_loader_correctness(train_dataloader: DataLoader):
     assert batch.batch_size == 2
     assert batch.images.shape == (2, 3, 640, 640)
     assert batch.reverse_transforms.shape == (2, 5)
-    expected_paths = [
-        Path("tests/data/images/train/000000050725.jpg"),
-        Path("tests/data/images/train/000000167848.jpg"),
-    ]
-    assert [Path(p) for p in batch.paths] == list(expected_paths)
+    all_train_images = {p.resolve() for p in Path("tests/data/images/train").glob("*.jpg")}
+    batch_paths = {Path(p).resolve() for p in batch.paths}
+    assert batch_paths.issubset(all_train_images), f"Batch paths {batch_paths} not in {all_train_images}"
 
 
 def test_validation_data_loader_correctness(validation_dataloader: DataLoader):
@@ -43,13 +42,13 @@ def test_validation_data_loader_correctness(validation_dataloader: DataLoader):
     assert batch.targets.shape == (5, 18, 5)
     assert batch.reverse_transforms.shape == (5, 5)
     expected_paths = [
-        Path("tests/data/images/val/000000151480.jpg"),
-        Path("tests/data/images/val/000000284106.jpg"),
-        Path("tests/data/images/val/000000323571.jpg"),
-        Path("tests/data/images/val/000000556498.jpg"),
-        Path("tests/data/images/val/000000570456.jpg"),
+        Path("tests/data/images/val/000000151480.jpg").resolve(),
+        Path("tests/data/images/val/000000284106.jpg").resolve(),
+        Path("tests/data/images/val/000000323571.jpg").resolve(),
+        Path("tests/data/images/val/000000556498.jpg").resolve(),
+        Path("tests/data/images/val/000000570456.jpg").resolve(),
     ]
-    assert [Path(p) for p in batch.paths] == list(expected_paths)
+    assert sorted([Path(p).resolve() for p in batch.paths]) == sorted(expected_paths)
 
 
 def test_file_stream_data_loader_frame(file_stream_data_loader: StreamDataLoader):

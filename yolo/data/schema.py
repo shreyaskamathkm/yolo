@@ -1,7 +1,21 @@
 from dataclasses import dataclass
+from enum import StrEnum
 from typing import Any, Dict, List, Optional
 
 from torch import Tensor
+
+
+class TrainerTaskType(StrEnum):
+    DETECTION = "detect"
+    SEGMENTATION = "segment"
+    INFERENCE = "inference"
+
+
+class DataSplitType(StrEnum):
+    TRAIN = "train"
+    VAL = "validation"
+    TEST = "test"
+    INFERENCE = "inference"
 
 
 @dataclass
@@ -27,3 +41,6 @@ class Batch:
     reverse_transforms: Optional[Tensor] = None
     paths: Optional[List[str]] = None
     batch_size: int = 0
+
+    def __iter__(self):
+        return iter((self.batch_size, self.images, self.targets, self.reverse_transforms, self.paths))

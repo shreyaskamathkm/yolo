@@ -17,6 +17,7 @@ from yolo.data.augmentation import AugmentationComposer
 from yolo.data.collate import collate_fn
 from yolo.data.datasets import DATASETS
 from yolo.data.preparation import prepare_dataset
+from yolo.data.schema import Batch, DataSplitType, Sample, TrainerTaskType
 from yolo.utils.logger import logger
 
 _STREAM_DONE = object()
@@ -175,7 +176,7 @@ class StreamDataLoader:
             frame = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
 
         origin_frame = frame
-        processed, _, rev_tensor = self.transform(frame, torch.zeros(0, 5))
+        processed, _, masks, rev_tensor = self.transform(frame, torch.zeros(0, 5))
         return processed[None], rev_tensor[None], origin_frame, path
 
     def __iter__(self) -> Generator[Tensor, None, None]:
@@ -206,7 +207,10 @@ class StreamDataLoader:
 
 
 def create_dataloader(
-    data_cfg: DataConfig, dataset_cfg: DatasetConfig, task: str = "detect", split: str = "train"
+    data_cfg: DataConfig,
+    dataset_cfg: DatasetConfig,
+    task: TrainerTaskType = TrainerTaskType.DETECTION,
+    split: Optional[DataSplitType] = None,
 ) -> Union[StreamDataLoader, DataLoader]:
     """Factory function to create the appropriate data loader based on the task.
 
@@ -219,13 +223,13 @@ def create_dataloader(
         task (str, optional): The current task ('detect' or 'segment').
             Defaults to "detect".
         split (str, optional): The dataset split to use (e.g., 'train', 'validation').
-            Defaults to "train".
+            Defaults to None.
 
     Returns:
         Union[StreamDataLoader, DataLoader]: The requested data loader instance.
     """
 
-    if task == "inference":
+    if task == TrainerTaskType.INFERENCE:
         return StreamDataLoader(data_cfg)
 
     if getattr(dataset_cfg, "auto_download", False):

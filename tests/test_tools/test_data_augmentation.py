@@ -16,7 +16,7 @@ def test_horizontal_flip():
     boxes = torch.tensor([[1, 0.05, 0.1, 0.7, 0.9]])  # class, xmin, ymin, xmax, ymax
 
     flip_transform = HorizontalFlip(prob=1)  # Set probability to 1 to ensure flip
-    flipped_img, flipped_boxes = flip_transform(img, boxes)
+    flipped_img, flipped_boxes, flipped_masks = flip_transform(img, boxes)
 
     # Assert image is flipped by comparing it to a manually flipped image
     assert TF.hflip(img) == flipped_img
@@ -28,14 +28,14 @@ def test_horizontal_flip():
 
 def test_compose():
     # Define two mock transforms that simply return the inputs
-    def mock_transform(image, boxes):
-        return image, boxes
+    def mock_transform(image, boxes, masks=None):
+        return image, boxes, masks
 
     compose = AugmentationComposer([mock_transform, mock_transform])
     img = Image.new("RGB", (640, 640), color="blue")
     boxes = torch.tensor([[0, 0.2, 0.2, 0.8, 0.8]])
 
-    transformed_img, transformed_boxes, rev_tensor = compose(img, boxes)
+    transformed_img, transformed_boxes, transformed_masks, rev_tensor = compose(img, boxes)
     tensor_img = TF.pil_to_tensor(img).to(torch.float32) / 255
 
     assert (transformed_img == tensor_img).all(), "Image should not be altered"
@@ -51,12 +51,12 @@ def test_mosaic():
         base_size = 100
 
         def get_more_data(self, num_images):
-            return [(img, boxes) for _ in range(num_images)]
+            return [(img, boxes, None) for _ in range(num_images)]
 
     mosaic = Mosaic(prob=1)  # Ensure mosaic is applied
     mosaic.set_parent(MockParent())
 
-    mosaic_img, mosaic_boxes = mosaic(img, boxes)
+    mosaic_img, mosaic_boxes, mosaic_masks = mosaic(img, boxes)
 
     # Checks here would depend on the exact expected behavior of the mosaic function,
     # such as dimensions and content of the output image and boxes.
