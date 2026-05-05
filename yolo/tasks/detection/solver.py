@@ -65,10 +65,7 @@ class DetectionValidateModel(BaseModel):
 
         super().__init__(cfg)
         self.cfg = cfg
-        if self.cfg.task.task == "validation":
-            self.validation_cfg = self.cfg.task
-        else:
-            self.validation_cfg = self.cfg.task.validation
+        self.validation_cfg = getattr(cfg.task, "validation", cfg.task)
         self.metric = MeanAveragePrecision(iou_type="bbox", box_format="xyxy", backend="faster_coco_eval")
         self.metric.warn_on_many_detections = False
         self.val_loader = create_dataloader(
@@ -87,7 +84,25 @@ class DetectionValidateModel(BaseModel):
     def validation_step(self, batch, batch_idx):
         images, targets = batch.images, batch.targets
         H, W = images.shape[2:]
-        predicts = self.post_process(self.model(images), image_size=[W, H])
+        raw_predicts = self.model(images)
+        predicts = self.post_process(raw_predicts, image_size=[W, H])
+
+        if hasattr(self, "loss_fn"):
+            main_predicts = self.vec2box(raw_predicts["Main"])
+            if "AUX" in raw_predicts and hasattr(self.loss_fn, "aux_rate"):
+                aux_predicts = self.vec2box(raw_predicts["AUX"])
+                val_loss, val_loss_item = self.loss_fn(aux_predicts, main_predicts, targets)
+            else:
+                val_loss, val_loss_item = self.loss_fn(main_predicts, targets)
+
+            self.log_dict(
+                {f"Val_{k}": v for k, v in val_loss_item.items()},
+                on_epoch=True,
+                batch_size=batch_size,
+                sync_dist=True,
+                rank_zero_only=True,
+            )
+
         mAP = self.metric(
             [to_metrics_format(predict) for predict in predicts], [to_metrics_format(target) for target in targets]
         )
@@ -134,9 +149,17 @@ class DetectionTrainModel(DetectionValidateModel):
     def training_step(self, batch, batch_idx):
         images, targets = batch.images, batch.targets
         predicts = self(images)
-        aux_predicts = self.vec2box(predicts["AUX"])
         main_predicts = self.vec2box(predicts["Main"])
-        loss, loss_item = self.loss_fn(aux_predicts, main_predicts, targets)
+        if "AUX" in predicts and hasattr(self.loss_fn, "aux_rate"):
+            aux_predicts = self.vec2box(predicts["AUX"])
+            loss, loss_item = self.loss_fn(aux_predicts, main_predicts, targets)
+        else:
+            loss, loss_item = self.loss_fn(main_predicts, targets)
+
+        world_size = self.trainer.world_size if self.trainer else 1
+        loss = loss * world_size * batch_size
+        loss_item = {k: v * world_size * batch_size for k, v in loss_item.items()}
+
         self.log_dict(
             loss_item,
             logger=True,
