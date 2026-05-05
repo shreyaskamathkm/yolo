@@ -242,7 +242,7 @@ class DetectionInferenceModel(LightningModule):
         images, rev_tensor, origin_frame, path = batch
         results = self(images)
         predicts = self.post_process(results, rev_tensor=rev_tensor)
-        img = draw_bboxes(origin_frame, predicts, idx2label=self.cfg.dataset.class_list)
+        img = draw_bboxes(origin_frame, predicts[0], idx2label=self.cfg.dataset.class_list)
         if getattr(self.predict_loader, "is_stream", None):
             fps = self._display_stream(img)
         else:
