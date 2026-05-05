@@ -45,22 +45,41 @@ Implement the actual parsing of label files:
 
 ## Usage
 
-You should rarely need to instantiate these classes directly. Instead, use the `create_dataloader` factory:
+You should rarely need to instantiate these classes directly. Instead, use the `create_dataloader` factory with the appropriate `TrainerTaskType` and `DataSplitType`:
 
 ```python
 from yolo.data.loader import create_dataloader
+from yolo.data.schema import TrainerTaskType, DataSplitType
 
-# For Detection
-dataloader = create_dataloader(data_cfg, dataset_cfg, task="train")
+# For Detection Training
+dataloader = create_dataloader(
+    data_cfg, 
+    dataset_cfg, 
+    task=TrainerTaskType.DETECTION, 
+    split=DataSplitType.TRAIN
+)
 
-# For Segmentation
-dataloader = create_dataloader(data_cfg, dataset_cfg, task="segmentation")
+# For Segmentation Validation
+dataloader = create_dataloader(
+    data_cfg, 
+    dataset_cfg, 
+    task=TrainerTaskType.SEGMENTATION, 
+    split=DataSplitType.VAL
+)
+
+# Batch Unpacking
+# The Batch object supports iteration for easy unpacking (compatible with legacy logic)
+for batch in dataloader:
+    batch_size, images, targets, rev_transforms, paths = batch
+    # Or use attributes directly
+    print(batch.images.shape)
 ```
 
 ## Adding a New Task
 
 To add a new task (e.g., Pose Estimation):
-1. Create `PoseDataset(BaseDataset)` in `yolo/data/dataset.py`.
-2. Implement `__getitem__` to return `Sample(..., keypoints=...)`.
-3. Create format-specific subclasses (e.g., `COCOPoseDataset`).
-4. Update the factory in `yolo/data/loader.py`.
+1. Add a new member to `TrainerTaskType` in `yolo/data/schema.py`.
+2. Create `PoseDataset(BaseDataset)` in `yolo/data/base/dataset.py`.
+3. Implement `__getitem__` to return `Sample(..., keypoints=...)`.
+4. Create format-specific subclasses (e.g., `COCOPoseDataset`).
+5. Update the factory in `yolo/data/loader.py`.

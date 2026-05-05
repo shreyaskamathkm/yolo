@@ -66,4 +66,17 @@ boxes = torch.tensor([[0, 0.1, 0.1, 0.5, 0.5]]) # [cls, x1, y1, x2, y2]
 aug_img, aug_boxes, aug_masks = mosaic(img, boxes)
 ```
 
-For more interactive examples, see the [Detection Demo](../notebooks/coco_dataloader_demo.ipynb) and [Segmentation Demo](../notebooks/coco_segmentation_demo.ipynb) notebooks.
+## Interactive Demonstrations
+
+For a hands-on exploration of the augmentation system, refer to the following notebooks:
+
+- **[COCO Dataloader Demo](../notebooks/coco_dataloader_demo.ipynb)**:
+  - Demonstrates the end-to-end detection pipeline.
+  - Visualizes complex multi-image augmentations like **Mosaic** and **MixUp**.
+  - Shows how to use `TrainerTaskType` and `DataSplitType` for configuration-driven data loading.
+- **[COCO Segmentation Demo](../notebooks/coco_segmentation_demo.ipynb)**:
+  - Focuses on the instance segmentation pipeline.
+  - Showcases synchronized transformations of images, bounding boxes, and **segmentation masks** (polygons).
+  - Demonstrates how the system handles mask-to-box conversion for hybrid transforms.
+
+These notebooks provide a safe environment to experiment with different augmentation settings before starting a full training run.

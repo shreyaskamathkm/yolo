@@ -232,6 +232,9 @@ def create_dataloader(
     if task == TrainerTaskType.INFERENCE:
         return StreamDataLoader(data_cfg)
 
+    if split is None:
+        raise ValueError("Split must be specified for training and validation tasks.")
+
     if getattr(dataset_cfg, "auto_download", False):
         prepare_dataset(dataset_cfg, split)
 
