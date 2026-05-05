@@ -53,17 +53,17 @@ from yolo.data.schema import TrainerTaskType, DataSplitType
 
 # For Detection Training
 dataloader = create_dataloader(
-    data_cfg, 
-    dataset_cfg, 
-    task=TrainerTaskType.DETECTION, 
+    data_cfg,
+    dataset_cfg,
+    task=TrainerTaskType.DETECTION,
     split=DataSplitType.TRAIN
 )
 
 # For Segmentation Validation
 dataloader = create_dataloader(
-    data_cfg, 
-    dataset_cfg, 
-    task=TrainerTaskType.SEGMENTATION, 
+    data_cfg,
+    dataset_cfg,
+    task=TrainerTaskType.SEGMENTATION,
     split=DataSplitType.VAL
 )
 
