@@ -1,4 +1,3 @@
-# TODO Phase 2: update imports — Conv, Pool from yolo.model.blocks.basic
 from typing import Any, Dict, List, Optional, Tuple
 
 import torch

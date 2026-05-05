@@ -7,6 +7,7 @@ from torch.nn import BCEWithLogitsLoss
 
 from yolo.config.config import Config, LossConfig
 from yolo.tasks.detection.postprocess import BoxMatcher, Vec2Box, calculate_iou
+from yolo.tasks.registry import LOSS_FUNCTIONS, register_loss
 from yolo.utils.logger import logger
 
 
@@ -126,7 +127,37 @@ class YOLOLoss:
         return loss_iou, loss_dfl, loss_cls
 
 
-class DualLoss:
+class BaseLoss:
+    """Base class for detection losses."""
+
+    def __init__(self, cfg: Config, vec2box: Any) -> None:
+        loss_cfg = cfg.task.loss
+        self.loss = YOLOLoss(loss_cfg, vec2box, class_num=cfg.dataset.class_num, reg_max=cfg.model.anchor.reg_max)
+        self.iou_rate = loss_cfg.objective["BoxLoss"]
+        self.dfl_rate = loss_cfg.objective["DFLoss"]
+        self.cls_rate = loss_cfg.objective["BCELoss"]
+
+
+@register_loss("detection", "single")
+class SingleLoss(BaseLoss):
+    """Loss for architectures with only a main branch."""
+
+    def __call__(self, main_predicts: List[Tensor], targets: Tensor) -> Tuple[Tensor, Dict[str, float]]:
+        main_iou, main_dfl, main_cls = self.loss(main_predicts, targets)
+
+        total_loss = [
+            self.iou_rate * main_iou,
+            self.dfl_rate * main_dfl,
+            self.cls_rate * main_cls,
+        ]
+        loss_dict = {
+            f"Loss/{name}Loss": value.detach().item() for name, value in zip(["Box", "DFL", "BCE"], total_loss)
+        }
+        return sum(total_loss), loss_dict
+
+
+@register_loss("detection", "dual")
+class DualLoss(BaseLoss):
     """Wrapper class that manages main and auxiliary losses.
 
     This is used for architectures like YOLOv9 (Deep-Supervision) that feature
@@ -140,14 +171,8 @@ class DualLoss:
             cfg (Config): System configuration.
             vec2box: Box converter instance.
         """
-        loss_cfg = cfg.task.loss
-        self.loss = YOLOLoss(loss_cfg, vec2box, class_num=cfg.dataset.class_num, reg_max=cfg.model.anchor.reg_max)
-
-        self.aux_rate = loss_cfg.aux
-
-        self.iou_rate = loss_cfg.objective["BoxLoss"]
-        self.dfl_rate = loss_cfg.objective["DFLoss"]
-        self.cls_rate = loss_cfg.objective["BCELoss"]
+        super().__init__(cfg, vec2box)
+        self.aux_rate = cfg.task.loss.aux
 
     def __call__(
         self, aux_predicts: List[Tensor], main_predicts: List[Tensor], targets: Tensor
@@ -167,7 +192,7 @@ class DualLoss:
         return sum(total_loss), loss_dict
 
 
-def create_loss_function(cfg: Config, vec2box: Any) -> DualLoss:
+def create_loss_function(cfg: Config, vec2box: Any) -> Any:
     """Factory function to build the requested loss function.
 
     Args:
@@ -175,9 +200,22 @@ def create_loss_function(cfg: Config, vec2box: Any) -> DualLoss:
         vec2box: Box converter instance.
 
     Returns:
-        DualLoss: An initialized loss instance.
+        Any: An initialized loss instance.
     """
-    # TODO: make it flexible, if cfg doesn't contain aux, only use SingleLoss
-    loss_function = DualLoss(cfg, vec2box)
-    logger.info(":white_check_mark: Success load loss function")
+    loss_cfg = cfg.task.loss
+    aux_rate = getattr(loss_cfg, "aux", None)
+
+    if aux_rate is not None and aux_rate > 0:
+        loss_name = "dual"
+    else:
+        loss_name = "single"
+
+    task_type = getattr(cfg, "task_type", "detection")
+    loss_class = LOSS_FUNCTIONS.get((task_type, loss_name))
+
+    if loss_class is None:
+        raise ValueError(f"Loss function '{loss_name}' not found for task '{task_type}'")
+
+    loss_function = loss_class(cfg, vec2box)
+    logger.info(f":white_check_mark: Success load {loss_name} loss function for {task_type}")
     return loss_function

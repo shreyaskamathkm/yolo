@@ -123,7 +123,7 @@ DOCKER_IMAGE ?= yolo
 
 docker-build:
 	@echo "--- Building Docker image $(DOCKER_IMAGE) ---"
-	docker build -f docker/Dockerfile -t $(DOCKER_IMAGE) .
+	docker build -f docker/Dockerfile --no-cache -t $(DOCKER_IMAGE) .
 
 docker-run:
 	@echo "--- Running Docker image $(DOCKER_IMAGE) with GPU support ---"
