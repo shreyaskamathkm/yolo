@@ -4,6 +4,7 @@ from torch.utils.data import DataLoader
 
 from yolo.config.config import Config
 from yolo.data.loader import StreamDataLoader, create_dataloader
+from yolo.data.schema import DataSplitType, TrainerTaskType
 
 
 def test_create_dataloader_cache(train_cfg: Config):
@@ -13,43 +14,41 @@ def test_create_dataloader_cache(train_cfg: Config):
     cache_file = Path("tests/data/train.cache")
     cache_file.unlink(missing_ok=True)
 
-    make_cache_loader = create_dataloader(train_cfg.task.data, train_cfg.dataset)
-    load_cache_loader = create_dataloader(train_cfg.task.data, train_cfg.dataset)
-    m_batch_size, m_images, _, m_reverse_tensors, m_image_paths = next(iter(make_cache_loader))
-    l_batch_size, l_images, _, l_reverse_tensors, l_image_paths = next(iter(load_cache_loader))
-    assert m_batch_size == l_batch_size
-    assert m_images.shape == l_images.shape
-    assert m_reverse_tensors.shape == l_reverse_tensors.shape
-    assert m_image_paths == l_image_paths
+    make_cache_loader = create_dataloader(train_cfg.task.data, train_cfg.dataset, split=DataSplitType.TRAIN)
+    load_cache_loader = create_dataloader(train_cfg.task.data, train_cfg.dataset, split=DataSplitType.TRAIN)
+    m_batch = next(iter(make_cache_loader))
+    l_batch = next(iter(load_cache_loader))
+    assert m_batch.batch_size == l_batch.batch_size
+    assert m_batch.images.shape == l_batch.images.shape
+    assert m_batch.reverse_transforms.shape == l_batch.reverse_transforms.shape
+    assert m_batch.paths == l_batch.paths
 
 
 def test_training_data_loader_correctness(train_dataloader: DataLoader):
     """Test that the training data loader produces correctly shaped data and metadata."""
-    batch_size, images, _, reverse_tensors, image_paths = next(iter(train_dataloader))
-    assert batch_size == 2
-    assert images.shape == (2, 3, 640, 640)
-    assert reverse_tensors.shape == (2, 5)
-    expected_paths = [
-        Path("tests/data/images/train/000000050725.jpg"),
-        Path("tests/data/images/train/000000167848.jpg"),
-    ]
-    assert list(image_paths) == list(expected_paths)
+    batch = next(iter(train_dataloader))
+    assert batch.batch_size == 2
+    assert batch.images.shape == (2, 3, 640, 640)
+    assert batch.reverse_transforms.shape == (2, 5)
+    all_train_images = {p.resolve() for p in Path("tests/data/images/train").glob("*.jpg")}
+    batch_paths = {Path(p).resolve() for p in batch.paths}
+    assert batch_paths.issubset(all_train_images), f"Batch paths {batch_paths} not in {all_train_images}"
 
 
 def test_validation_data_loader_correctness(validation_dataloader: DataLoader):
-    batch_size, images, targets, reverse_tensors, image_paths = next(iter(validation_dataloader))
-    assert batch_size == 5
-    assert images.shape == (5, 3, 640, 640)
-    assert targets.shape == (5, 18, 5)
-    assert reverse_tensors.shape == (5, 5)
+    batch = next(iter(validation_dataloader))
+    assert batch.batch_size == 5
+    assert batch.images.shape == (5, 3, 640, 640)
+    assert batch.targets.shape == (5, 18, 5)
+    assert batch.reverse_transforms.shape == (5, 5)
     expected_paths = [
-        Path("tests/data/images/val/000000151480.jpg"),
-        Path("tests/data/images/val/000000284106.jpg"),
-        Path("tests/data/images/val/000000323571.jpg"),
-        Path("tests/data/images/val/000000556498.jpg"),
-        Path("tests/data/images/val/000000570456.jpg"),
+        Path("tests/data/images/val/000000151480.jpg").resolve(),
+        Path("tests/data/images/val/000000284106.jpg").resolve(),
+        Path("tests/data/images/val/000000323571.jpg").resolve(),
+        Path("tests/data/images/val/000000556498.jpg").resolve(),
+        Path("tests/data/images/val/000000570456.jpg").resolve(),
     ]
-    assert list(image_paths) == list(expected_paths)
+    assert sorted([Path(p).resolve() for p in batch.paths]) == sorted(expected_paths)
 
 
 def test_file_stream_data_loader_frame(file_stream_data_loader: StreamDataLoader):

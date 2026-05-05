@@ -38,7 +38,7 @@ yolo/
 │   └── classification/
 │       └── head.py             # Classification
 ├── data/
-│   ├── dataset.py              # YoloDataset, collate_fn
+│   ├── dataset.py              # Sample/Batch dataclasses, BaseDataset hierarchy
 │   ├── loader.py               # create_dataloader, StreamDataLoader
 │   ├── augmentation.py         # AugmentationComposer and transform classes
 │   └── preparation.py          # prepare_dataset, prepare_weight
@@ -63,6 +63,7 @@ yolo/
 | New NN building block (conv, attention, etc.) | `model/blocks/basic.py` or `backbone.py` / `neck.py` |
 | New backbone or neck architecture | New YAML in `config/model/` + blocks in `model/blocks/` |
 | New data augmentation transform | `data/augmentation.py` |
+| New computer vision task (Pose, etc.) | Create new `Dataset` class in `data/dataset.py` (see [Dataset Architecture](../dataset_architecture.md)) |
 | Detection loss tweak | `tasks/detection/loss.py` |
 | Post-processing or NMS change | `tasks/detection/postprocess.py` |
 | Training callback (LR logging, etc.) | `training/callbacks.py` |

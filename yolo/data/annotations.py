@@ -11,34 +11,45 @@ from yolo.utils.format_converters import discretize_categories
 from yolo.utils.logger import logger
 
 
-def locate_label_paths(dataset_path: Path, phase_name: Path) -> Tuple[Path, Path]:
+def locate_label_paths(dataset_path: Path, phase_path: str) -> Tuple[Path, Path]:
     """
     Find the path to label files for a specified dataset and phase(e.g. training).
 
     Args:
         dataset_path (Path): The path to the root directory of the dataset.
-        phase_name (Path): The name of the phase for which labels are being searched (e.g., "train", "val", "test").
+        phase_path (str): The name of the phase or path to labels.
 
     Returns:
         Tuple[Path, Path]: A tuple containing the path to the labels file and the file format ("json" or "txt").
     """
-    json_labels_path = dataset_path / "annotations" / f"instances_{phase_name}.json"
+    # 1. Check if phase_path is a direct file
+    if Path(phase_path).is_file():
+        return Path(phase_path), "json" if phase_path.endswith(".json") else "txt"
 
-    txt_labels_path = dataset_path / "labels" / phase_name
+    # 2. Check relative to dataset_path
+    rel_path = dataset_path / phase_path
+    if rel_path.is_file():
+        return rel_path, "json" if str(rel_path).endswith(".json") else "txt"
+    if rel_path.is_dir():
+        return rel_path, "txt"
+
+    # 3. Fallback to standard COCO/YOLO naming
+    json_labels_path = dataset_path / "annotations" / f"instances_{phase_path}.json"
+    txt_labels_path = dataset_path / "labels" / phase_path
 
     if json_labels_path.is_file():
         return json_labels_path, "json"
 
-    elif txt_labels_path.is_dir():
+    if txt_labels_path.is_dir():
         txt_files = [f for f in os.listdir(txt_labels_path) if f.endswith(".txt")]
         if txt_files:
             return txt_labels_path, "txt"
 
-    logger.warning("No labels found in the specified dataset path and phase name.")
-    return [], None
+    logger.warning(f"No labels found for phase '{phase_path}' in '{dataset_path}'")
+    return None, None
 
 
-def create_image_metadata(labels_path: str) -> Tuple[Dict[str, List], Dict[str, Dict]]:
+def create_image_metadata(labels_path: str) -> Tuple[Dict[int, List], Dict[str, Dict]]:
     """
     Create a dictionary containing image information and annotations indexed by image ID.
 

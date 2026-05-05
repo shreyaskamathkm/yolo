@@ -9,6 +9,7 @@ from torch.utils.data import Dataset
 from yolo import Anc2Box, Config, Vec2Box, create_converter, create_model
 from yolo.data.loader import StreamDataLoader, create_dataloader
 from yolo.data.preparation import prepare_dataset
+from yolo.data.schema import DataSplitType, TrainerTaskType
 from yolo.model.builder import YOLO
 from yolo.utils.logging_utils import build_loggers
 from yolo.utils.runner_utils import build_callbacks, set_seed
@@ -110,13 +111,17 @@ def anc2box(inference_v7_cfg: Config, model: YOLO, device) -> Anc2Box:
 @pytest.fixture(scope="session")
 def train_dataloader(train_cfg: Config):
     prepare_dataset(train_cfg.dataset, task="train")
-    return create_dataloader(train_cfg.task.data, train_cfg.dataset, train_cfg.task.task)
+    return create_dataloader(
+        train_cfg.task.data, train_cfg.dataset, task=TrainerTaskType.DETECTION, split=DataSplitType.TRAIN
+    )
 
 
 @pytest.fixture(scope="session")
 def validation_dataloader(validation_cfg: Config):
     prepare_dataset(validation_cfg.dataset, task="val")
-    return create_dataloader(validation_cfg.task.data, validation_cfg.dataset, validation_cfg.task.task)
+    return create_dataloader(
+        validation_cfg.task.data, validation_cfg.dataset, task=TrainerTaskType.DETECTION, split=DataSplitType.VAL
+    )
 
 
 @pytest.fixture(scope="session")

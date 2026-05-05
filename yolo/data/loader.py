@@ -14,10 +14,12 @@ from torch.utils.data import DataLoader
 
 from yolo.config.config import DataConfig, DatasetConfig
 from yolo.data.augmentation import AugmentationComposer
-from yolo.data.dataset import YoloDataset, collate_fn
+from yolo.data.collate import collate_fn
+from yolo.data.datasets import DATASETS
 from yolo.data.preparation import prepare_dataset
+from yolo.data.schema import Batch, DataSplitType, Sample, TrainerTaskType
+from yolo.utils.logger import logger
 
-# Sentinel to signal end-of-source cleanly (avoids timeout-based StopIteration)
 _STREAM_DONE = object()
 _STREAM_SOURCE = ("rtmp://", "rtsp://", "http://", "https://")
 
@@ -174,7 +176,7 @@ class StreamDataLoader:
             frame = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
 
         origin_frame = frame
-        processed, _, rev_tensor = self.transform(frame, torch.zeros(0, 5))
+        processed, _, masks, rev_tensor = self.transform(frame, torch.zeros(0, 5))
         return processed[None], rev_tensor[None], origin_frame, path
 
     def __iter__(self) -> Generator[Tensor, None, None]:
@@ -205,29 +207,53 @@ class StreamDataLoader:
 
 
 def create_dataloader(
-    data_cfg: DataConfig, dataset_cfg: DatasetConfig, task: str = "train"
+    data_cfg: DataConfig,
+    dataset_cfg: DatasetConfig,
+    task: TrainerTaskType = TrainerTaskType.DETECTION,
+    split: Optional[DataSplitType] = None,
 ) -> Union[StreamDataLoader, DataLoader]:
     """Factory function to create the appropriate data loader based on the task.
 
     For inference tasks, it returns a `StreamDataLoader`. For training and validation,
-    it returns a standard PyTorch `DataLoader` wrapping the `YoloDataset`.
+    it returns a standard PyTorch `DataLoader` wrapping the appropriate dataset class.
 
     Args:
         data_cfg (DataConfig): Data-specific configuration (batch size, source, etc.).
         dataset_cfg (DatasetConfig): Dataset-specific configuration (classes, paths).
-        task (str, optional): The current task ('train', 'validation', or 'inference').
-            Defaults to "train".
+        task (str, optional): The current task ('detect' or 'segment').
+            Defaults to "detect".
+        split (str, optional): The dataset split to use (e.g., 'train', 'validation').
+            Defaults to None.
 
     Returns:
         Union[StreamDataLoader, DataLoader]: The requested data loader instance.
     """
 
-    if task == "inference":
+    if task == TrainerTaskType.INFERENCE:
         return StreamDataLoader(data_cfg)
 
+    if split is None:
+        raise ValueError("Split must be specified for training and validation tasks.")
+
     if getattr(dataset_cfg, "auto_download", False):
-        prepare_dataset(dataset_cfg, task)
-    dataset = YoloDataset(data_cfg, dataset_cfg, task)
+        prepare_dataset(dataset_cfg, split)
+
+    # 1. Dataset Factory: Select the appropriate class from registry
+    dataset_key = f"{task}_{dataset_cfg.type}"
+    dataset_class = DATASETS.get(dataset_key)
+
+    if dataset_class is None:
+        raise ValueError(
+            f"No dataset registered for '{dataset_key}'. " f"Available: {list(DATASETS.module_dict.keys())}"
+        )
+
+    dataset = dataset_class(
+        dataset_path=Path(dataset_cfg.path),
+        phase=split,
+        data_cfg=data_cfg,
+        dataset_cfg=dataset_cfg,
+        task=task,
+    )
 
     return DataLoader(
         dataset,

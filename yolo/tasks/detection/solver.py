@@ -11,6 +11,7 @@ from torchmetrics.detection import MeanAveragePrecision
 
 from yolo.config.config import Config
 from yolo.data.loader import create_dataloader
+from yolo.data.schema import DataSplitType, TrainerTaskType
 from yolo.deploy import create_inference_backend
 from yolo.model.builder import create_model
 from yolo.tasks.detection.loss import create_loss_function
@@ -67,7 +68,9 @@ class DetectionValidateModel(BaseModel):
         self.validation_cfg = getattr(cfg.task, "validation", cfg.task)
         self.metric = MeanAveragePrecision(iou_type="bbox", box_format="xyxy", backend="faster_coco_eval")
         self.metric.warn_on_many_detections = False
-        self.val_loader = create_dataloader(self.validation_cfg.data, self.cfg.dataset, self.validation_cfg.task)
+        self.val_loader = create_dataloader(
+            cfg.task.data, cfg.dataset, task=TrainerTaskType.DETECTION, split=DataSplitType.VAL
+        )
 
     def setup(self, stage):
         self.vec2box = create_converter(
@@ -79,7 +82,7 @@ class DetectionValidateModel(BaseModel):
         return self.val_loader
 
     def validation_step(self, batch, batch_idx):
-        batch_size, images, targets, rev_tensor, img_paths = batch
+        images, targets = batch.images, batch.targets
         H, W = images.shape[2:]
         raw_predicts = self.model(images)
         predicts = self.post_process(raw_predicts, image_size=[W, H])
@@ -129,7 +132,9 @@ class DetectionTrainModel(DetectionValidateModel):
 
         super().__init__(cfg)
         self.cfg = cfg
-        self.train_loader = create_dataloader(self.cfg.task.data, self.cfg.dataset, self.cfg.task.task)
+        self.train_loader = create_dataloader(
+            self.cfg.task.data, self.cfg.dataset, task=TrainerTaskType.DETECTION, split=DataSplitType.TRAIN
+        )
 
     def setup(self, stage):
         super().setup(stage)
@@ -142,7 +147,7 @@ class DetectionTrainModel(DetectionValidateModel):
         self.vec2box.update(self.cfg.image_size)
 
     def training_step(self, batch, batch_idx):
-        batch_size, images, targets, *_ = batch
+        images, targets = batch.images, batch.targets
         predicts = self(images)
         main_predicts = self.vec2box(predicts["Main"])
         if "AUX" in predicts and hasattr(self.loss_fn, "aux_rate"):
@@ -160,10 +165,10 @@ class DetectionTrainModel(DetectionValidateModel):
             logger=True,
             prog_bar=True,
             on_epoch=True,
-            batch_size=batch_size,
+            batch_size=batch.batch_size,
             rank_zero_only=True,
         )
-        return loss * batch_size * self.trainer.world_size
+        return loss
 
     def configure_optimizers(self):
         optimizer = create_optimizer(self.model, self.cfg.task.optimizer)
@@ -211,7 +216,7 @@ class DetectionInferenceModel(LightningModule):
         super().__init__()
         self.cfg = cfg
         self.model = create_inference_backend(cfg.task.backend, self.cfg.weight, str(self.device), self.cfg)
-        self.predict_loader = create_dataloader(cfg.task.data, cfg.dataset, cfg.task.task)
+        self.predict_loader = create_dataloader(cfg.task.data, cfg.dataset, task=TrainerTaskType.INFERENCE)
         self.last_time = time.time()
         self.video_writer = None
         self.current_video_path = None
@@ -237,7 +242,7 @@ class DetectionInferenceModel(LightningModule):
         images, rev_tensor, origin_frame, path = batch
         results = self(images)
         predicts = self.post_process(results, rev_tensor=rev_tensor)
-        img = draw_bboxes(origin_frame, predicts, idx2label=self.cfg.dataset.class_list)
+        img = draw_bboxes(origin_frame, predicts[0], idx2label=self.cfg.dataset.class_list)
         if getattr(self.predict_loader, "is_stream", None):
             fps = self._display_stream(img)
         else:
