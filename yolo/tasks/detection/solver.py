@@ -11,12 +11,12 @@ from torchmetrics.detection import MeanAveragePrecision
 
 from yolo.config.config import Config
 from yolo.data.loader import create_dataloader
-from yolo.data.schema import DataSplitType, TrainerTaskType
+from yolo.data.schema import DataSplitType, TaskMode, TrainerTaskType
 from yolo.deploy import create_inference_backend
 from yolo.model.builder import create_model
+from yolo.registry import SOLVERS
 from yolo.tasks.detection.loss import create_loss_function
 from yolo.tasks.detection.postprocess import create_converter, to_metrics_format
-from yolo.registry import SOLVERS
 from yolo.training.optim import create_optimizer, create_scheduler
 from yolo.utils.drawer import draw_bboxes
 from yolo.utils.model_utils import PostProcess
@@ -48,7 +48,7 @@ class BaseModel(LightningModule):
             checkpoint["state_dict"] = clean_state_dict(checkpoint["state_dict"])
 
 
-@SOLVERS.register_module(name=("detection", "validation"))
+@SOLVERS.register_module(name=(TrainerTaskType.DETECTION, TaskMode.VAL))
 class DetectionValidateModel(BaseModel):
     """LightningModule for YOLO detection validation.
 
@@ -98,7 +98,7 @@ class DetectionValidateModel(BaseModel):
             self.log_dict(
                 {f"Val_{k}": v for k, v in val_loss_item.items()},
                 on_epoch=True,
-                batch_size=batch_size,
+                batch_size=batch.batch_size,
                 sync_dist=True,
                 rank_zero_only=True,
             )
@@ -115,7 +115,7 @@ class DetectionValidateModel(BaseModel):
         self.metric.reset()
 
 
-@SOLVERS.register_module(name=("detection", "train"))
+@SOLVERS.register_module(name=(TrainerTaskType.DETECTION, TaskMode.TRAIN))
 class DetectionTrainModel(DetectionValidateModel):
     """LightningModule for YOLO detection training.
 
@@ -155,11 +155,7 @@ class DetectionTrainModel(DetectionValidateModel):
             loss, loss_item = self.loss_fn(aux_predicts, main_predicts, targets)
         else:
             loss, loss_item = self.loss_fn(main_predicts, targets)
-
-        world_size = self.trainer.world_size if self.trainer else 1
-        loss = loss * world_size * batch_size
-        loss_item = {k: v * world_size * batch_size for k, v in loss_item.items()}
-
+            
         self.log_dict(
             loss_item,
             logger=True,
@@ -198,7 +194,7 @@ class DetectionTrainModel(DetectionValidateModel):
         return {"optimizer": optimizer, "lr_scheduler": {"scheduler": scheduler, "interval": "step"}}
 
 
-@SOLVERS.register_module(name=("detection", "inference"))
+@SOLVERS.register_module(name=(TrainerTaskType.DETECTION, TaskMode.INFERENCE))
 class DetectionInferenceModel(BaseModel):
     """LightningModule for YOLO detection inference.
 

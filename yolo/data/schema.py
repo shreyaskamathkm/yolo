@@ -8,9 +8,18 @@ from torch import Tensor
 class TrainerTaskType(str, Enum):
     # __str__ is overridden for Python 3.10 compatibility (StrEnum is 3.11+)
     # This ensures f-strings and registry lookups use the value instead of the repr
-    DETECTION = "detect"
-    SEGMENTATION = "segment"
+    DETECTION = "detection"
+    SEGMENTATION = "segmentation"
+
+    def __str__(self):
+        return self.value
+
+
+class TaskMode(str, Enum):
+    TRAIN = "train"
+    VAL = "validation"
     INFERENCE = "inference"
+    EXPORT = "export"
 
     def __str__(self):
         return self.value
@@ -21,7 +30,6 @@ class DataSplitType(str, Enum):
     TRAIN = "train"
     VAL = "validation"
     TEST = "test"
-    INFERENCE = "inference"
 
     def __str__(self):
         return self.value

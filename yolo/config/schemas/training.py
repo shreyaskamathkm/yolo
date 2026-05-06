@@ -3,6 +3,7 @@ from typing import Any, Dict, Optional, Union
 
 from yolo.config.schemas.data import DataConfig
 from yolo.config.schemas.task import ValidationConfig
+from yolo.data.schema import TrainerTaskType
 
 
 @dataclass
@@ -59,7 +60,7 @@ class EMAConfig:
 
 @dataclass
 class TrainConfig:
-    task: str
+    task: TrainerTaskType
     epoch: int
     save_all_checkpoints: bool
     resume: Optional[str]

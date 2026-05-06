@@ -17,7 +17,7 @@ from yolo.data.augmentation import AugmentationComposer
 from yolo.data.collate import collate_fn
 from yolo.data.datasets import DATASETS
 from yolo.data.preparation import prepare_dataset
-from yolo.data.schema import Batch, DataSplitType, Sample, TrainerTaskType
+from yolo.data.schema import Batch, DataSplitType, Sample, TrainerTaskType, TaskMode
 from yolo.utils.logger import logger
 
 _STREAM_DONE = object()
@@ -229,7 +229,7 @@ def create_dataloader(
         Union[StreamDataLoader, DataLoader]: The requested data loader instance.
     """
 
-    if task == TrainerTaskType.INFERENCE:
+    if task == TaskMode.INFERENCE:
         return StreamDataLoader(data_cfg)
 
     if split is None:
@@ -239,7 +239,7 @@ def create_dataloader(
         prepare_dataset(dataset_cfg, split)
 
     # 1. Dataset Factory: Select the appropriate class from registry
-    dataset_key = f"{task}_{dataset_cfg.type}"
+    dataset_key = (task, dataset_cfg.type)
     dataset_class = DATASETS.get(dataset_key)
 
     if dataset_class is None:

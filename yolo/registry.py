@@ -5,6 +5,9 @@ and decorators for task-specific registration.
 """
 
 from typing import TYPE_CHECKING, Any, Dict, Optional, Type
+from yolo.data.schema import DataSplitType, TaskMode
+
+from yolo.data.schema import DataSplitType
 
 if TYPE_CHECKING:
     from lightning import LightningModule
@@ -133,5 +136,15 @@ LOSSES = Registry("losses")
 # Data transformations and augmentations (e.g. Mosaic, MixUp)
 TRANSFORMS = Registry("transforms")
 
+# Datasets (e.g. COCO, YOLO)
+DATASETS = Registry("datasets")
+
 # Task solvers / LightningModules (e.g. DetectionTrainModel)
 SOLVERS = Registry("solvers")
+
+# Trainer method mapping
+TRAINER_METHODS = {
+    TaskMode.TRAIN: "fit",
+    TaskMode.VAL: "validate",
+    TaskMode.INFERENCE: "predict",
+}

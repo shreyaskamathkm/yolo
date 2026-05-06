@@ -8,5 +8,5 @@ defaults:
   - _self_
   - task: train
   - dataset: coco
-  - model: v9-t
+  - model: v9-c
   - general
