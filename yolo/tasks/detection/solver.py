@@ -11,7 +11,7 @@ from torchmetrics.detection import MeanAveragePrecision
 
 from yolo.config.config import Config
 from yolo.data.loader import create_dataloader
-from yolo.data.schema import DataSplitType, TaskMode, TrainerTaskType
+from yolo.schema import DataSplitType, TaskMode, TrainerTaskType
 from yolo.deploy import create_inference_backend
 from yolo.model.builder import create_model
 from yolo.registry import SOLVERS
@@ -190,6 +190,9 @@ class DetectionTrainModel(DetectionValidateModel):
         else:
             steps_per_epoch = max(1, ceil(len(self.train_loader) / max_accum))
 
+        # Fix: ensure steps_per_epoch is at least 1
+        steps_per_epoch = max(1, steps_per_epoch)
+
         scheduler = create_scheduler(optimizer, self.cfg.task.scheduler, steps_per_epoch, self.cfg.task.epoch)
         return {"optimizer": optimizer, "lr_scheduler": {"scheduler": scheduler, "interval": "step"}}
 
@@ -209,7 +212,7 @@ class DetectionInferenceModel(BaseModel):
             cfg (Config): System configuration.
         """
 
-        super().__init__()
+        super().__init__(cfg)
         self.cfg = cfg
         self.model = create_inference_backend(cfg.task.backend, self.cfg.weight, str(self.device), self.cfg)
         self.predict_loader = create_dataloader(cfg.task.data, cfg.dataset, task=TrainerTaskType.INFERENCE)

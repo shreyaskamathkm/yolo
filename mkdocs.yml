@@ -6,6 +6,9 @@ repo_name: shreyaskamathkm/yolo
 
 theme:
   name: material
+  font:
+    text: Inter
+    code: Roboto Mono
   features:
     - content.tabs.link
     - content.code.copy
@@ -18,17 +21,20 @@ theme:
     - search.highlight
   palette:
     - scheme: slate
-      primary: teal
-      accent: cyan
+      primary: deep purple
+      accent: deep purple
       toggle:
         icon: material/brightness-4
         name: Switch to light mode
     - scheme: default
-      primary: teal
-      accent: cyan
+      primary: deep purple
+      accent: deep purple
       toggle:
         icon: material/brightness-7
         name: Switch to dark mode
+
+extra_css:
+  - stylesheets/extra.css
 
 markdown_extensions:
   - admonition

@@ -3,7 +3,7 @@ from typing import Any, Dict, Optional, Union
 
 from yolo.config.schemas.data import DataConfig
 from yolo.config.schemas.task import ValidationConfig
-from yolo.data.schema import TrainerTaskType
+from yolo.schema import TrainerTaskType
 
 
 @dataclass

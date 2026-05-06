@@ -17,7 +17,8 @@ from yolo.data.augmentation import AugmentationComposer
 from yolo.data.collate import collate_fn
 from yolo.data.datasets import DATASETS
 from yolo.data.preparation import prepare_dataset
-from yolo.data.schema import Batch, DataSplitType, Sample, TrainerTaskType, TaskMode
+from yolo.data.schema import Batch, Sample
+from yolo.schema import DataSplitType, TaskMode, TrainerTaskType
 from yolo.utils.logger import logger
 
 _STREAM_DONE = object()
@@ -220,9 +221,9 @@ def create_dataloader(
     Args:
         data_cfg (DataConfig): Data-specific configuration (batch size, source, etc.).
         dataset_cfg (DatasetConfig): Dataset-specific configuration (classes, paths).
-        task (str, optional): The current task ('detect' or 'segment').
-            Defaults to "detect".
-        split (str, optional): The dataset split to use (e.g., 'train', 'validation').
+        task (TrainerTaskType, optional): The current task.
+            Defaults to TrainerTaskType.DETECTION.
+        split (DataSplitType, optional): The dataset split to use (e.g., TRAIN, VAL).
             Defaults to None.
 
     Returns:

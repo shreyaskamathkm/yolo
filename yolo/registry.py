@@ -5,9 +5,8 @@ and decorators for task-specific registration.
 """
 
 from typing import TYPE_CHECKING, Any, Dict, Optional, Type
-from yolo.data.schema import DataSplitType, TaskMode
 
-from yolo.data.schema import DataSplitType
+from yolo.schema import DataSplitType, TaskMode
 
 if TYPE_CHECKING:
     from lightning import LightningModule

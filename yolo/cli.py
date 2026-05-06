@@ -4,7 +4,7 @@ from omegaconf import OmegaConf
 
 import yolo.tasks.detection.solver
 from yolo.config.config import Config, resolve_config
-from yolo.data.schema import TaskMode, TrainerTaskType
+from yolo.schema import TaskMode, TrainerTaskType
 from yolo.deploy import ModelExporter
 from yolo.registry import SOLVERS, TRAINER_METHODS
 from yolo.utils.logging_utils import build_loggers

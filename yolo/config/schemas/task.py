@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import List, Optional
 
 from yolo.config.schemas.data import DataConfig  # noqa: F401
-from yolo.data.schema import TrainerTaskType
+from yolo.schema import TrainerTaskType
 
 
 @dataclass

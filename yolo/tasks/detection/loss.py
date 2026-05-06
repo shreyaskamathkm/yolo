@@ -6,7 +6,7 @@ from torch import Tensor, nn
 from torch.nn import BCEWithLogitsLoss
 
 from yolo.config.config import Config, LossConfig
-from yolo.data.schema import TrainerTaskType
+from yolo.schema import TrainerTaskType
 from yolo.registry import LOSSES
 from yolo.tasks.detection.postprocess import BoxMatcher, Vec2Box, calculate_iou
 from yolo.utils.logger import logger
