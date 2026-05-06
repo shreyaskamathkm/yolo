@@ -70,11 +70,11 @@ aug_img, aug_boxes, aug_masks = mosaic(img, boxes)
 
 For a hands-on exploration of the augmentation system, refer to the following notebooks:
 
-- **[COCO Dataloader Demo](../notebooks/coco_dataloader_demo.ipynb)**:
+- **[COCO Dataloader Demo](https://github.com/shreyaskamathkm/yolo/blob/main/notebooks/coco_dataloader_demo.ipynb)**:
   - Demonstrates the end-to-end detection pipeline.
   - Visualizes complex multi-image augmentations like **Mosaic** and **MixUp**.
   - Shows how to use `TrainerTaskType` and `DataSplitType` for configuration-driven data loading.
-- **[COCO Segmentation Demo](../notebooks/coco_segmentation_demo.ipynb)**:
+- **[COCO Segmentation Demo](https://github.com/shreyaskamathkm/yolo/blob/main/notebooks/coco_segmentation_demo.ipynb)**:
   - Focuses on the instance segmentation pipeline.
   - Showcases synchronized transformations of images, bounding boxes, and **segmentation masks** (polygons).
   - Demonstrates how the system handles mask-to-box conversion for hybrid transforms.

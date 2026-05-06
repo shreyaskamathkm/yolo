@@ -22,8 +22,8 @@ Check the [Project Structure](0_get_start/3_project_structure.md) to see where e
 ## Interactive Demonstrations
 
 Explore the new data pipeline and augmentation system interactively:
-- **[Dataloader Demo](../notebooks/coco_dataloader_demo.ipynb)**: Detailed look at the detection pipeline, including Mosaic/MixUp visualizations.
-- **[Segmentation Demo](../notebooks/coco_segmentation_demo.ipynb)**: Demonstrates synchronized image and mask transformations for instance segmentation.
+- **[Dataloader Demo](https://github.com/shreyaskamathkm/yolo/blob/main/notebooks/coco_dataloader_demo.ipynb)**: Detailed look at the detection pipeline, including Mosaic/MixUp visualizations.
+- **[Segmentation Demo](https://github.com/shreyaskamathkm/yolo/blob/main/notebooks/coco_segmentation_demo.ipynb)**: Demonstrates synchronized image and mask transformations for instance segmentation.
 
 ## Core Components
 

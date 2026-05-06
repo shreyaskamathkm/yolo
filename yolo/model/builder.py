@@ -1,6 +1,6 @@
 from collections import OrderedDict
 from pathlib import Path
-from typing import Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 import torch
 from omegaconf import ListConfig, OmegaConf
@@ -87,7 +87,9 @@ class YOLO(nn.Module):
                 setattr(layer, "out_c", out_channels)
             layer_idx += 1
 
-    def forward(self, x, external: Optional[Dict] = None, shortcut: Optional[str] = None):
+    def forward(
+        self, x: torch.Tensor, external: Optional[Dict] = None, shortcut: Optional[str] = None
+    ) -> Dict[str, torch.Tensor]:
         """Performs a forward pass.
 
         Args:
@@ -118,7 +120,9 @@ class YOLO(nn.Module):
                     return output
         return output
 
-    def get_out_channels(self, layer_type: str, layer_args: dict, output_dim: list, source: Union[int, list]):
+    def get_out_channels(
+        self, layer_type: str, layer_args: dict, output_dim: List[int], source: Union[int, List[int]]
+    ) -> int:
         """Calculates the number of output channels for a layer.
 
         Args:
@@ -139,7 +143,7 @@ class YOLO(nn.Module):
         if isinstance(source, list):
             return sum(output_dim[idx] for idx in source)
 
-    def get_source_idx(self, source: Union[ListConfig, str, int], layer_idx: int):
+    def get_source_idx(self, source: Union[ListConfig, str, int], layer_idx: int) -> Union[int, List[int]]:
         """Resolves the source index for a layer.
 
         Handles relative indices, named tags, and ListConfig.
@@ -161,7 +165,9 @@ class YOLO(nn.Module):
             self.model[source - 1].usable = True
         return source
 
-    def create_layer(self, layer_type: str, source: Union[int, list], layer_info: Dict, **kwargs) -> YOLOLayer:
+    def create_layer(
+        self, layer_type: str, source: Union[int, List[int]], layer_info: Dict, **kwargs: Any
+    ) -> YOLOLayer:
         """Instantiates a layer from the registry.
 
         Args:

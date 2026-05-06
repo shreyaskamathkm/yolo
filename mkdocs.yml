@@ -83,7 +83,11 @@ nav:
     - Train & Validate: 1_tutorials/4_train.md
     - Inference: 1_tutorials/5_inference.md
   - Model Zoo:
+    - Overview: 2_model_zoo/index.md
     - Object Detection: 2_model_zoo/0_object_detection.md
+  - Architecture:
+    - Dataset: dataset_architecture.md
+    - Augmentation: augmentation.md
   - Custom YOLO:
     - Model: 3_custom/0_model.md
     - Data Augmentation: 3_custom/1_data_augment.md
