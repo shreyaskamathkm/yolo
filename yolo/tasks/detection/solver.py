@@ -16,7 +16,7 @@ from yolo.deploy import create_inference_backend
 from yolo.model.builder import create_model
 from yolo.tasks.detection.loss import create_loss_function
 from yolo.tasks.detection.postprocess import create_converter, to_metrics_format
-from yolo.tasks.registry import register
+from yolo.registry import SOLVERS
 from yolo.training.optim import create_optimizer, create_scheduler
 from yolo.utils.drawer import draw_bboxes
 from yolo.utils.model_utils import PostProcess
@@ -48,7 +48,7 @@ class BaseModel(LightningModule):
             checkpoint["state_dict"] = clean_state_dict(checkpoint["state_dict"])
 
 
-@register("detection", "validation")
+@SOLVERS.register_module(name=("detection", "validation"))
 class DetectionValidateModel(BaseModel):
     """LightningModule for YOLO detection validation.
 
@@ -115,7 +115,7 @@ class DetectionValidateModel(BaseModel):
         self.metric.reset()
 
 
-@register("detection", "train")
+@SOLVERS.register_module(name=("detection", "train"))
 class DetectionTrainModel(DetectionValidateModel):
     """LightningModule for YOLO detection training.
 
@@ -198,8 +198,8 @@ class DetectionTrainModel(DetectionValidateModel):
         return {"optimizer": optimizer, "lr_scheduler": {"scheduler": scheduler, "interval": "step"}}
 
 
-@register("detection", "inference")
-class DetectionInferenceModel(LightningModule):
+@SOLVERS.register_module(name=("detection", "inference"))
+class DetectionInferenceModel(BaseModel):
     """LightningModule for YOLO detection inference.
 
     Handles high-performance inference using various backends, real-time

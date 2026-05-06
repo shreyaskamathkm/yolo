@@ -2,11 +2,22 @@
 
 YOLO (You Only Look Once) is a state-of-the-art, real-time object detection system designed for both efficiency and accuracy. This documentation provides comprehensive guidance on how to set up, configure, and effectively use YOLO for object detection tasks.
 
-## Project Features
+## Key Features
+- **Unified Registry System**: Centralized hub for models, blocks, losses, and transforms, enabling easy extension.
+- **Lightning Fast**: Built on PyTorch Lightning for effortless multi-GPU and mixed-precision training.
+- **Modular Design**: Decoupled architecture where backbones, necks, and heads can be swapped via YAML.
+- **Production Ready**: Optimized export pipelines for ONNX and TensorRT.
 
-- **Real-time Processing**: YOLO processes images in real-time with high accuracy, suitable for applications requiring instant detection.
-- **Multitasking Capabilities**: Supports multitasking, allowing multiple object detection tasks simultaneously.
-- **Open Source**: Released under the MIT License, encouraging community contributions.
+## Extensibility
+The YOLO repository is built with modularity as a first-class citizen. Using our new registry system, you can easily integrate your own components:
+
+- **Custom Blocks**: Register any `nn.Module` with `@BLOCKS.register_module()` and use it directly in your YAML architecture.
+- **Custom Models**: Plug in complex architectures like **FTNet** by registering them in `MODELS`.
+- **Custom Losses**: Implement task-specific losses and register them in `LOSSES` using tuple keys: `@LOSSES.register_module(name=("task", "name"))`.
+- **Custom Solvers**: Register task solvers in `SOLVERS` using tuple keys: `@SOLVERS.register_module(name=("task", "mode"))`.
+- **Dynamic Transforms**: Add new data augmentations to `TRANSFORMS` without modifying the core loader.
+
+Check the [Project Structure](0_get_start/3_project_structure.md) to see where everything lives.
 
 ## Interactive Demonstrations
 

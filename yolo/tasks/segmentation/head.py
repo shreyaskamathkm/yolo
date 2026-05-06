@@ -4,9 +4,11 @@ import torch
 from torch import Tensor, nn
 
 from yolo.model.blocks.basic import Conv
+from yolo.registry import BLOCKS
 from yolo.tasks.detection.head import MultiheadDetection
 
 
+@BLOCKS.register_module()
 class Segmentation(nn.Module):
     def __init__(self, in_channels: Tuple[int], num_maskes: int):
         super().__init__()
@@ -22,6 +24,7 @@ class Segmentation(nn.Module):
         return x
 
 
+@BLOCKS.register_module()
 class MultiheadSegmentation(nn.Module):
     """Multihead Segmentation module for Dual segment or Triple segment"""
 

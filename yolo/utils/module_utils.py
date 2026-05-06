@@ -61,21 +61,6 @@ def restore_compile_prefix(state_dict: dict, prefixes: Union[str, List[str]] = [
     return new_state_dict
 
 
-def get_layer_map():
-    """
-    Dynamically generates a dictionary mapping class names to classes,
-    filtering to include only those that are subclasses of nn.Module,
-    ensuring they are relevant neural network layers.
-    """
-    layer_map = {}
-    from yolo.model import blocks
-
-    for name, obj in inspect.getmembers(blocks, inspect.isclass):
-        if issubclass(obj, nn.Module) and obj is not nn.Module:
-            layer_map[name] = obj
-    return layer_map
-
-
 def auto_pad(kernel_size: _size_2_t, dilation: _size_2_t = 1, **kwargs) -> Tuple[int, int]:
     """
     Auto Padding for the convolution blocks

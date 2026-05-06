@@ -1,4 +1,3 @@
-# TODO Phase 2: update imports — Conv, Pool from yolo.model.blocks.basic
 from typing import List, Optional, Tuple
 
 import torch
@@ -6,9 +5,11 @@ import torch.nn.functional as F
 from torch import Tensor, nn
 
 from yolo.model.blocks.basic import Conv, Pool
+from yolo.registry import BLOCKS
 from yolo.utils.module_utils import auto_pad
 
 
+@BLOCKS.register_module()
 class CBLinear(nn.Module):
     """Convolutional block that outputs multiple feature maps split along the channel dimension."""
 
@@ -23,6 +24,7 @@ class CBLinear(nn.Module):
         return x.split(self.out_channels, dim=1)
 
 
+@BLOCKS.register_module()
 class SPPCSPConv(nn.Module):
     # CSP https://github.com/WongKinYiu/CrossStagePartialNetworks
     def __init__(self, in_channels: int, out_channels: int, expand: float = 0.5, kernel_sizes: Tuple[int] = (5, 9, 13)):
@@ -49,6 +51,7 @@ class SPPCSPConv(nn.Module):
         return self.merge_conv(y)
 
 
+@BLOCKS.register_module()
 class SPPELAN(nn.Module):
     """SPPELAN module comprising multiple pooling and convolution layers."""
 
@@ -67,6 +70,7 @@ class SPPELAN(nn.Module):
         return self.conv5(torch.cat(features, dim=1))
 
 
+@BLOCKS.register_module()
 class CBFuse(nn.Module):
     def __init__(self, index: List[int], mode: str = "nearest"):
         super().__init__()

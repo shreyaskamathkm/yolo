@@ -7,7 +7,7 @@ from torch.nn import BCEWithLogitsLoss
 
 from yolo.config.config import Config, LossConfig
 from yolo.tasks.detection.postprocess import BoxMatcher, Vec2Box, calculate_iou
-from yolo.tasks.registry import LOSS_FUNCTIONS, register_loss
+from yolo.registry import LOSSES
 from yolo.utils.logger import logger
 
 
@@ -138,8 +138,8 @@ class BaseLoss:
         self.cls_rate = loss_cfg.objective["BCELoss"]
 
 
-@register_loss("detection", "single")
-class SingleLoss(BaseLoss):
+@LOSSES.register_module(name=("detection", "single"))
+class YOLOLoss(BaseLoss):
     """Loss for architectures with only a main branch."""
 
     def __call__(self, main_predicts: List[Tensor], targets: Tensor) -> Tuple[Tensor, Dict[str, float]]:
@@ -156,8 +156,8 @@ class SingleLoss(BaseLoss):
         return sum(total_loss), loss_dict
 
 
-@register_loss("detection", "dual")
-class DualLoss(BaseLoss):
+@LOSSES.register_module(name=("detection", "dual"))
+class DualLoss(YOLOLoss):
     """Wrapper class that manages main and auxiliary losses.
 
     This is used for architectures like YOLOv9 (Deep-Supervision) that feature

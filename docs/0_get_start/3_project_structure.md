@@ -6,6 +6,7 @@ The codebase is organized into horizontal shared infrastructure and vertical tas
 yolo/
 ├── cli.py                      # CLI entry point (Hydra @main)
 ├── __main__.py                 # Enables `python -m yolo`
+├── registry.py                 # Registry engine + global instances (MODELS, BLOCKS, etc.)
 ├── config/
 │   ├── schemas/
 │   │   ├── model.py            # AnchorConfig, ModelConfig, YOLOLayer
@@ -40,7 +41,9 @@ yolo/
 ├── data/
 │   ├── dataset.py              # Sample/Batch dataclasses, BaseDataset hierarchy
 │   ├── loader.py               # create_dataloader, StreamDataLoader
-│   ├── augmentation.py         # AugmentationComposer and transform classes
+│   ├── augmentation/           # Data augmentation transforms
+│   │   ├── __init__.py         # AugmentationComposer
+│   │   └── transforms.py       # Transform classes (Mosaic, MixUp, etc.)
 │   └── preparation.py          # prepare_dataset, prepare_weight
 ├── training/
 │   ├── optim.py                # lerp, warmup policies, WarmupBatchScheduler, create_optimizer/scheduler
@@ -50,7 +53,7 @@ yolo/
     ├── logging_utils.py        # Progress bars, WandB/TensorBoard setup, ImageLogger
     ├── drawer.py               # draw_bboxes, draw_model
     ├── model_utils.py          # PostProcess, distributed utilities (collect_prediction, get_device)
-    ├── module_utils.py         # get_layer_map, auto_pad, round_up
+    ├── module_utils.py         # auto_pad, round_up
     ├── dataset_utils.py        # locate_label_paths, create_image_metadata, scale_segmentation
     ├── format_converters.py    # discretize_categories, annotation conversion utilities
     └── solver_utils.py         # make_ap_table and other display helpers
