@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from typing import List, Optional
 
 from yolo.config.schemas.data import DataConfig  # noqa: F401
+from yolo.schema import TrainerTaskType
 
 
 @dataclass
@@ -13,7 +14,7 @@ class NMSConfig:
 
 @dataclass
 class InferenceConfig:
-    task: str
+    task: TrainerTaskType
     nms: NMSConfig
     data: DataConfig
     backend: str
@@ -22,13 +23,13 @@ class InferenceConfig:
 
 @dataclass
 class ValidationConfig:
-    task: str
+    task: TrainerTaskType
     nms: NMSConfig
     data: DataConfig
 
 
 @dataclass
 class ExportConfig:
-    task: str
+    task: TrainerTaskType
     formats: List[str]
     output_dir: str

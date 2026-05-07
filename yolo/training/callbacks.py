@@ -1,3 +1,4 @@
+import logging
 from math import exp
 from typing import Optional
 
@@ -7,7 +8,8 @@ from lightning.pytorch.callbacks import Callback
 
 from yolo.config.config import DataConfig, SchedulerConfig
 from yolo.training.optim import lerp
-from yolo.utils.logger import logger
+
+logger = logging.getLogger(__name__)
 from yolo.utils.module_utils import clean_state_dict, unwrap_model
 
 

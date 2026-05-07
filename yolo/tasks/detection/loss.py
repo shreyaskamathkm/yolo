@@ -1,3 +1,4 @@
+import logging
 from typing import Any, Dict, List, Tuple
 
 import torch
@@ -6,9 +7,11 @@ from torch import Tensor, nn
 from torch.nn import BCEWithLogitsLoss
 
 from yolo.config.config import Config, LossConfig
+from yolo.registry import LOSSES
+from yolo.schema import TrainerTaskType
 from yolo.tasks.detection.postprocess import BoxMatcher, Vec2Box, calculate_iou
-from yolo.tasks.registry import LOSS_FUNCTIONS, register_loss
-from yolo.utils.logger import logger
+
+logger = logging.getLogger(__name__)
 
 
 class BCELoss(nn.Module):
@@ -138,7 +141,7 @@ class BaseLoss:
         self.cls_rate = loss_cfg.objective["BCELoss"]
 
 
-@register_loss("detection", "single")
+@LOSSES.register_module(name=(TrainerTaskType.DETECTION, "single"))
 class SingleLoss(BaseLoss):
     """Loss for architectures with only a main branch."""
 
@@ -156,8 +159,8 @@ class SingleLoss(BaseLoss):
         return sum(total_loss), loss_dict
 
 
-@register_loss("detection", "dual")
-class DualLoss(BaseLoss):
+@LOSSES.register_module(name=(TrainerTaskType.DETECTION, "dual"))
+class DualLoss(SingleLoss):
     """Wrapper class that manages main and auxiliary losses.
 
     This is used for architectures like YOLOv9 (Deep-Supervision) that feature
@@ -210,8 +213,8 @@ def create_loss_function(cfg: Config, vec2box: Any) -> Any:
     else:
         loss_name = "single"
 
-    task_type = getattr(cfg, "task_type", "detection")
-    loss_class = LOSS_FUNCTIONS.get((task_type, loss_name))
+    task_type = getattr(cfg, "task_type", TrainerTaskType.DETECTION)
+    loss_class = LOSSES.get((task_type, loss_name))
 
     if loss_class is None:
         raise ValueError(f"Loss function '{loss_name}' not found for task '{task_type}'")

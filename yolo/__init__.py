@@ -1,3 +1,17 @@
+import logging
+
+from lightning.pytorch.utilities.rank_zero import rank_zero_only
+from rich.console import Console
+from rich.logging import RichHandler
+
+# Configure the base logger for the package
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+logger.propagate = False
+
+if rank_zero_only.rank == 0 and not logger.hasHandlers():
+    logger.addHandler(RichHandler(show_path=True, show_time=False, markup=True))
+
 from yolo.config.config import Config, NMSConfig
 from yolo.data.loader import AugmentationComposer, create_dataloader
 from yolo.deploy import ModelExporter, create_inference_backend
@@ -18,6 +32,7 @@ from yolo.utils.logging_utils import (
 from yolo.utils.model_utils import PostProcess
 
 __all__ = [
+    "logger",
     "create_model",
     "Config",
     "YOLORichProgressBar",

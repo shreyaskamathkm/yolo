@@ -29,7 +29,7 @@ The `AugmentationComposer` chains multiple transforms. It also handles the injec
 
 ## Multi-Image Sampling
 
-Transforms like `Mosaic` and `MixUp` need additional data. This is handled via the `set_parent` mechanism. The `AugmentationComposer` automatically links the transforms to the dataset's sampling method.
+| Transforms like `Mosaic` and `MixUp` need additional data. This is handled via the `set_parent` mechanism. The `AugmentationComposer` automatically links the transforms to the dataset's sampling method.
 
 ## Writing a Custom Transform
 
@@ -80,5 +80,5 @@ aug_img, aug_boxes, aug_masks = mosaic(img, torch.zeros((0, 5)))
 ```
 
 For interactive examples, see the
-- [Detection Demo](../../notebooks/coco_dataloader_demo.ipynb).
-- [Segmentation Demo](../../notebooks/coco_segmentation_demo.ipynb)
+- [Detection Demo](https://github.com/shreyaskamathkm/yolo/blob/main/notebooks/coco_dataloader_demo.ipynb).
+- [Segmentation Demo](https://github.com/shreyaskamathkm/yolo/blob/main/notebooks/coco_segmentation_demo.ipynb)

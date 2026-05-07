@@ -41,8 +41,9 @@ from typing_extensions import override
 
 from yolo.config.config import Config, YOLOLayer
 from yolo.model.builder import YOLO
-from yolo.utils.logger import logger
 from yolo.utils.solver_utils import make_ap_table
+
+logger = logging.getLogger(__name__)
 
 
 class YOLOCustomProgress(CustomProgress):
@@ -235,7 +236,7 @@ def setup_logger(logger_name, quiet=False):
         def format(self, record, emoji=":high_voltage:"):
             return f"{emoji} {super().format(record)}"
 
-    rich_handler = RichHandler(markup=True)
+    rich_handler = RichHandler(show_path=True, show_time=False, markup=True)
     rich_handler.setFormatter(EmojiFormatter("%(message)s"))
     rich_logger = logging.getLogger(logger_name)
     if rich_logger:

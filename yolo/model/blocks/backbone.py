@@ -1,3 +1,4 @@
+import logging
 from typing import Any, Dict, List, Optional, Tuple
 
 import torch
@@ -5,10 +6,13 @@ from torch import Tensor, nn
 from torch.nn.common_types import _size_2_t
 
 from yolo.model.blocks.basic import Conv, Pool
-from yolo.utils.logger import logger
+from yolo.registry import BLOCKS
+
+logger = logging.getLogger(__name__)
 from yolo.utils.module_utils import create_activation_function
 
 
+@BLOCKS.register_module()
 class RepConv(nn.Module):
     """A convolutional block that combines two convolution layers (kernel and point-wise)."""
 
@@ -30,6 +34,7 @@ class RepConv(nn.Module):
         return self.act(self.conv1(x) + self.conv2(x))
 
 
+@BLOCKS.register_module()
 class Bottleneck(nn.Module):
     """A bottleneck block with optional residual connections."""
 
@@ -60,6 +65,7 @@ class Bottleneck(nn.Module):
         return x + y if self.residual else y
 
 
+@BLOCKS.register_module()
 class RepNCSP(nn.Module):
     """RepNCSP block with convolutions, split, and bottleneck processing."""
 
@@ -91,6 +97,7 @@ class RepNCSP(nn.Module):
         return self.conv3(torch.cat((x1, x2), dim=1))
 
 
+@BLOCKS.register_module()
 class ELAN(nn.Module):
     """ELAN structure."""
 
@@ -121,6 +128,7 @@ class ELAN(nn.Module):
         return x5
 
 
+@BLOCKS.register_module()
 class RepNCSPELAN(nn.Module):
     """RepNCSPELAN block combining RepNCSP blocks with ELAN structure."""
 
@@ -159,6 +167,7 @@ class RepNCSPELAN(nn.Module):
         return x5
 
 
+@BLOCKS.register_module()
 class AConv(nn.Module):
     """Downsampling module combining average and max pooling with convolution for feature reduction."""
 
@@ -174,6 +183,7 @@ class AConv(nn.Module):
         return x
 
 
+@BLOCKS.register_module()
 class ADown(nn.Module):
     """Downsampling module combining average and max pooling with convolution for feature reduction."""
 

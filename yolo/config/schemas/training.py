@@ -3,6 +3,7 @@ from typing import Any, Dict, Optional, Union
 
 from yolo.config.schemas.data import DataConfig
 from yolo.config.schemas.task import ValidationConfig
+from yolo.schema import TrainerTaskType
 
 
 @dataclass
@@ -35,6 +36,7 @@ class TrainerConfig:
     gradient_clip_val: float = 10.0
     gradient_clip_algorithm: str = "norm"
     deterministic: bool = True
+    fast_dev_run: Union[bool, int] = False
 
 
 @dataclass
@@ -59,7 +61,7 @@ class EMAConfig:
 
 @dataclass
 class TrainConfig:
-    task: str
+    task: TrainerTaskType
     epoch: int
     save_all_checkpoints: bool
     resume: Optional[str]

@@ -1,6 +1,7 @@
+import logging
 from collections import OrderedDict
 from pathlib import Path
-from typing import Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 import torch
 from omegaconf import ListConfig, OmegaConf
@@ -8,8 +9,10 @@ from torch import nn
 
 from yolo.config.config import ModelConfig, YOLOLayer
 from yolo.data.preparation import prepare_weight
-from yolo.utils.logger import logger
-from yolo.utils.module_utils import get_layer_map
+from yolo.model import blocks
+from yolo.registry import BLOCKS
+
+logger = logging.getLogger(__name__)
 
 
 class YOLO(nn.Module):
@@ -21,7 +24,6 @@ class YOLO(nn.Module):
 
     Attributes:
         num_classes (int): Number of detection classes.
-        layer_map (Dict): Map of layer names to their respective PyTorch modules.
         model (nn.ModuleList): The sequential list of layers comprising the model.
         reg_max (int): Maximum regression distance for box predictions.
     """
@@ -36,12 +38,19 @@ class YOLO(nn.Module):
         super(YOLO, self).__init__()
 
         self.num_classes = class_num
-        self.layer_map = get_layer_map()  # Get the map Dict[str: Module]
         self.model: List[YOLOLayer] = nn.ModuleList()
         self.reg_max = getattr(model_cfg.anchor, "reg_max", 16)
         self.build_model(model_cfg.model)
 
     def build_model(self, model_arch: Dict[str, List[Dict[str, Dict[str, Dict]]]]):
+        """Assembles the model from an architecture specification.
+
+        Args:
+            model_arch (Dict): Dictionary containing backbone, neck, and head specs.
+
+        Raises:
+            ValueError: If a duplicate tag is found in the architecture.
+        """
         self.layer_index = {}
         output_dim, layer_idx = [3], 1
         logger.info(f":tractor: Building YOLO")
@@ -80,7 +89,19 @@ class YOLO(nn.Module):
                 setattr(layer, "out_c", out_channels)
             layer_idx += 1
 
-    def forward(self, x, external: Optional[Dict] = None, shortcut: Optional[str] = None):
+    def forward(
+        self, x: torch.Tensor, external: Optional[Dict] = None, shortcut: Optional[str] = None
+    ) -> Dict[str, torch.Tensor]:
+        """Performs a forward pass.
+
+        Args:
+            x (Tensor): Input image tensor.
+            external (Optional[Dict]): External feature maps for skip-connections.
+            shortcut (Optional[str]): If provided, returns the output of this specific tag early.
+
+        Returns:
+            Dict[str, Tensor]: Map of layer tags to their respective output tensors.
+        """
         y = {0: x, **(external or {})}
         output = dict()
         for index, layer in enumerate(self.model, start=1):
@@ -101,7 +122,20 @@ class YOLO(nn.Module):
                     return output
         return output
 
-    def get_out_channels(self, layer_type: str, layer_args: dict, output_dim: list, source: Union[int, list]):
+    def get_out_channels(
+        self, layer_type: str, layer_args: dict, output_dim: List[int], source: Union[int, List[int]]
+    ) -> int:
+        """Calculates the number of output channels for a layer.
+
+        Args:
+            layer_type (str): The type of the layer.
+            layer_args (dict): Arguments passed to the layer.
+            output_dim (list): List of output channels for all previous layers.
+            source (Union[int, list]): The index or indices of input layers.
+
+        Returns:
+            int: The calculated number of output channels.
+        """
         if hasattr(layer_args, "out_channels"):
             return layer_args["out_channels"]
         if layer_type == "CBFuse":
@@ -111,7 +145,18 @@ class YOLO(nn.Module):
         if isinstance(source, list):
             return sum(output_dim[idx] for idx in source)
 
-    def get_source_idx(self, source: Union[ListConfig, str, int], layer_idx: int):
+    def get_source_idx(self, source: Union[ListConfig, str, int], layer_idx: int) -> Union[int, List[int]]:
+        """Resolves the source index for a layer.
+
+        Handles relative indices, named tags, and ListConfig.
+
+        Args:
+            source (Union[ListConfig, str, int]): The raw source identifier.
+            layer_idx (int): The index of the current layer.
+
+        Returns:
+            Union[int, list]: The resolved absolute index or list of indices.
+        """
         if isinstance(source, ListConfig):
             return [self.get_source_idx(index, layer_idx) for index in source]
         if isinstance(source, str):
@@ -122,9 +167,25 @@ class YOLO(nn.Module):
             self.model[source - 1].usable = True
         return source
 
-    def create_layer(self, layer_type: str, source: Union[int, list], layer_info: Dict, **kwargs) -> YOLOLayer:
-        if layer_type in self.layer_map:
-            layer = self.layer_map[layer_type](**kwargs)
+    def create_layer(
+        self, layer_type: str, source: Union[int, List[int]], layer_info: Dict, **kwargs: Any
+    ) -> YOLOLayer:
+        """Instantiates a layer from the registry.
+
+        Args:
+            layer_type (str): The registered name of the block.
+            source (Union[int, list]): Source layer indices.
+            layer_info (Dict): Configuration dictionary for the layer.
+            **kwargs: Arguments for the layer's constructor.
+
+        Returns:
+            YOLOLayer: The instantiated layer.
+
+        Raises:
+            ValueError: If the layer_type is not registered.
+        """
+        if layer_type in BLOCKS:
+            layer = BLOCKS[layer_type](**kwargs)
             setattr(layer, "layer_type", layer_type)
             setattr(layer, "source", source)
             setattr(layer, "in_c", kwargs.get("in_channels", None))
@@ -137,17 +198,16 @@ class YOLO(nn.Module):
             raise ValueError(f"Unsupported layer type: {layer_type}")
 
     def save_load_weights(self, weights: Union[Path, dict], weight_key: str = "state_dict"):
-        """
-        Update the model's weights with the provided weights.
+        """Loads weights into the model with robust key matching.
 
         Args:
-            weights: A path to a weights file or a dictionary containing the weights.
-            weight_key: The key to look for in the weights dictionary.
+            weights (Union[Path, dict]): Path to a weights file or a state_dict.
+            weight_key (str, optional): Key to look for in the weights file.
+                Defaults to "state_dict".
         """
         if isinstance(weights, (str, Path)):
             weights = torch.load(weights, map_location=torch.device("cpu"), weights_only=False)
 
-        # Extract state_dict from checkpoint
         if weight_key in weights:
             loaded_dict = weights[weight_key]
         elif "state_dict" in weights:
@@ -156,18 +216,13 @@ class YOLO(nn.Module):
         else:
             loaded_dict = weights
 
-        # Clean prefixes from loaded weights
         from yolo.utils.module_utils import clean_state_dict
 
         loaded_dict = clean_state_dict(loaded_dict)
-
-        # Prepare target state_dict
         new_state_dict = self.model.state_dict()
 
-        # Match keys robustly
         matched_keys = 0
         for model_key in new_state_dict.keys():
-            # Try exact match, then try removing 'model.' prefix if present in loaded_dict
             search_keys = [model_key, f"model.{model_key}", f"model.model.{model_key}"]
             found = False
             for k in search_keys:
@@ -183,12 +238,11 @@ class YOLO(nn.Module):
                             f"expected {new_state_dict[model_key].shape}, "
                             f"got {loaded_dict[k].shape}"
                         )
-
             if not found:
                 logger.debug(f"ℹ️ Layer {model_key} not found in loaded weights")
 
         if matched_keys == 0:
-            logger.error("❌ No weights were matched! Check your weight_key or model configuration.")
+            logger.error("❌ No weights were matched!")
         else:
             logger.info(f"✅ Successfully matched {matched_keys}/{len(new_state_dict)} weight tensors")
 
@@ -198,21 +252,22 @@ class YOLO(nn.Module):
 def create_model(
     model_cfg: ModelConfig, weight_path: Union[bool, Path] = True, class_num: int = 80, weight_key: str = "state_dict"
 ) -> YOLO:
-    """Constructs and returns a YOLO model from a model config.
+    """Constructs and returns a YOLO model.
 
     Args:
-        model_cfg (ModelConfig): The model configuration (architecture definition).
-        weight_path (Union[bool, Path]): Path to pretrained weights. ``True`` loads
-            the default weights for the model name; ``False`` trains from scratch.
-        class_num (int): Number of output classes.
+        model_cfg (ModelConfig): The architecture configuration.
+        weight_path (Union[bool, Path], optional): Path to weights. If True,
+            attempts to load default weights. Defaults to True.
+        class_num (int, optional): Number of output classes. Defaults to 80.
+        weight_key (str, optional): Key for weights in the file. Defaults to "state_dict".
 
     Returns:
-        YOLO: An instance of the model defined by the given configuration.
+        YOLO: The assembled model.
     """
     OmegaConf.set_struct(model_cfg, False)
     model = YOLO(model_cfg, class_num)
     if weight_path:
-        if weight_path == True:
+        if weight_path is True:
             weight_path = Path("weights") / f"{model_cfg.name}.pt"
         elif isinstance(weight_path, str):
             weight_path = Path(weight_path)
@@ -237,6 +292,6 @@ def create_model(
                 backend=model_cfg.compile.backend,
             )
         else:
-            logger.warning("⚠️ torch.compile is not available in this version of PyTorch. Skipping compilation.")
+            logger.warning("⚠️ torch.compile is not available.")
 
     return model

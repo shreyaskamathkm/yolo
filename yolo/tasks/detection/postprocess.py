@@ -1,3 +1,4 @@
+import logging
 import math
 from typing import Any, Dict, List, Optional, Tuple, Union
 
@@ -9,7 +10,8 @@ from torchvision.ops import batched_nms
 
 from yolo.config.config import AnchorConfig, MatcherConfig, NMSConfig
 from yolo.model.builder import YOLO
-from yolo.utils.logger import logger
+
+logger = logging.getLogger(__name__)
 
 
 def calculate_iou(bbox1: Tensor, bbox2: Tensor, metrics: str = "iou") -> Tensor:

@@ -2,7 +2,7 @@
 
 ## Dataset
 
-::: yolo.data.dataset
+::: yolo.data.base.dataset
     options:
       members: true
       undoc-members: true
@@ -35,9 +35,25 @@
       undoc-members: true
       show-inheritance: true
 
-## Helper
+## Schema
 
-::: yolo.data.helper
+::: yolo.data.schema
+    options:
+      members: true
+      undoc-members: true
+      show-inheritance: true
+
+## Annotations
+
+::: yolo.data.annotations
+    options:
+      members: true
+      undoc-members: true
+      show-inheritance: true
+
+## Collate
+
+::: yolo.data.collate
     options:
       members: true
       undoc-members: true

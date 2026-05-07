@@ -1,30 +1,9 @@
 from dataclasses import dataclass
-from enum import Enum
 from typing import Any, Dict, List, Optional
 
 from torch import Tensor
 
-
-class TrainerTaskType(str, Enum):
-    # __str__ is overridden for Python 3.10 compatibility (StrEnum is 3.11+)
-    # This ensures f-strings and registry lookups use the value instead of the repr
-    DETECTION = "detect"
-    SEGMENTATION = "segment"
-    INFERENCE = "inference"
-
-    def __str__(self):
-        return self.value
-
-
-class DataSplitType(str, Enum):
-    # __str__ is overridden for Python 3.10 compatibility
-    TRAIN = "train"
-    VAL = "validation"
-    TEST = "test"
-    INFERENCE = "inference"
-
-    def __str__(self):
-        return self.value
+from yolo.schema import DataSplitType, TaskMode, TrainerTaskType
 
 
 @dataclass

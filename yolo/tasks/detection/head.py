@@ -5,9 +5,11 @@ from torch import nn
 
 from yolo.model.blocks.basic import Conv
 from yolo.model.blocks.implicit import Anchor2Vec, ImplicitA, ImplicitM
+from yolo.registry import BLOCKS
 from yolo.utils.module_utils import round_up
 
 
+@BLOCKS.register_module()
 class Detection(nn.Module):
     """A single YOLO Prediction Head.
 
@@ -32,7 +34,8 @@ class Detection(nn.Module):
 
         first_neck, in_channels = in_channels
         anchor_neck = max(round_up(first_neck // 4, groups), anchor_channels, reg_max)
-        class_neck = max(first_neck, min(num_classes * 2, 128))
+        # class_neck = max(first_neck, min(num_classes * 2, 128))
+        class_neck = max(first_neck, num_classes)
 
         self.anchor_conv = nn.Sequential(
             Conv(in_channels, anchor_neck, 3),
@@ -55,6 +58,7 @@ class Detection(nn.Module):
         return class_x, anchor_x, vector_x
 
 
+@BLOCKS.register_module()
 class IDetection(nn.Module):
     """A YOLOv7-style Implicit Detection head.
 
@@ -88,6 +92,7 @@ class IDetection(nn.Module):
         return x
 
 
+@BLOCKS.register_module()
 class MultiheadDetection(nn.Module):
     """Module that manages multiple prediction heads for different scales.
 

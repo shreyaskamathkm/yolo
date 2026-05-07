@@ -2,6 +2,8 @@
 from dataclasses import dataclass
 from typing import List, Optional, Union
 
+from omegaconf import OmegaConf
+
 from yolo.config.schemas.data import (
     DataConfig,
     DatasetConfig,
@@ -32,6 +34,7 @@ from yolo.config.schemas.training import (
     TrainConfig,
     TrainerConfig,
 )
+from yolo.schema import TrainerTaskType
 
 
 @dataclass
@@ -52,9 +55,19 @@ class Config:
     use_wandb: bool
     use_tensorboard: bool
 
-    task_type: str
+    task_type: TrainerTaskType
     weight: Optional[str]
     quiet: bool = False
+
+
+def resolve_config(cfg: Config) -> Config:
+    from yolo.schema import TaskMode, TrainerTaskType
+
+    cfg.task_type = TrainerTaskType(cfg.task_type)
+    # The 'task' field inside the task config represents the action mode
+    if hasattr(cfg.task, "task"):
+        cfg.task.task = TaskMode(cfg.task.task)
+    return cfg
 
 
 IDX_TO_ID = [
@@ -138,6 +151,75 @@ IDX_TO_ID = [
     88,
     89,
     90,
+    90,
+    91,
+    92,
+    93,
+    94,
+    95,
+    96,
+    97,
+    98,
+    99,
+    100,
+    101,
+    102,
+    103,
+    104,
+    105,
+    106,
+    107,
+    108,
+    109,
+    110,
+    111,
+    112,
+    113,
+    114,
+    115,
+    116,
+    117,
+    118,
+    119,
+    120,
+    121,
+    122,
+    123,
+    124,
+    125,
+    126,
+    127,
+    128,
+    129,
+    130,
+    131,
+    132,
+    133,
+    134,
+    135,
+    136,
+    137,
+    138,
+    139,
+    140,
+    141,
+    142,
+    143,
+    144,
+    145,
+    146,
+    147,
+    148,
+    149,
+    150,
+    151,
+    152,
+    154,
+    155,
+    156,
+    157,
+    158,
+    159,
 ]
 
 __all__ = [

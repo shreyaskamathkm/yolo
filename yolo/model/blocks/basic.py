@@ -1,13 +1,14 @@
-# TODO Phase 2: update imports to yolo.config.schemas.model, yolo.utils.module_utils
 from typing import Optional, Tuple
 
 import torch
 from torch import Tensor, nn
 from torch.nn.common_types import _size_2_t
 
+from yolo.registry import BLOCKS
 from yolo.utils.module_utils import auto_pad, create_activation_function
 
 
+@BLOCKS.register_module()
 class Conv(nn.Module):
     """A basic convolutional block that includes convolution, batch normalization, and activation."""
 
@@ -30,6 +31,7 @@ class Conv(nn.Module):
         return self.act(self.bn(self.conv(x)))
 
 
+@BLOCKS.register_module()
 class Pool(nn.Module):
     """A generic pooling block supporting 'max' and 'avg' pooling methods."""
 
@@ -43,6 +45,7 @@ class Pool(nn.Module):
         return self.pool(x)
 
 
+@BLOCKS.register_module()
 class Concat(nn.Module):
     def __init__(self, dim=1):
         super(Concat, self).__init__()
@@ -52,6 +55,7 @@ class Concat(nn.Module):
         return torch.cat(x, self.dim)
 
 
+@BLOCKS.register_module()
 class UpSample(nn.Module):
     def __init__(self, **kwargs):
         super().__init__()

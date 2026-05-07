@@ -1,10 +1,12 @@
+import logging
 from pathlib import Path
 
 import torch
 from torch import Tensor, nn
 
 from yolo.config.config import Config
-from yolo.utils.logger import logger
+
+logger = logging.getLogger(__name__)
 
 
 class DeployWrapper(nn.Module):

@@ -1,3 +1,4 @@
+import logging
 import threading
 from pathlib import Path
 from queue import Empty, Full, Queue
@@ -17,8 +18,10 @@ from yolo.data.augmentation import AugmentationComposer
 from yolo.data.collate import collate_fn
 from yolo.data.datasets import DATASETS
 from yolo.data.preparation import prepare_dataset
-from yolo.data.schema import Batch, DataSplitType, Sample, TrainerTaskType
-from yolo.utils.logger import logger
+from yolo.data.schema import Batch, Sample
+from yolo.schema import DataSplitType, TaskMode, TrainerTaskType
+
+logger = logging.getLogger(__name__)
 
 _STREAM_DONE = object()
 _STREAM_SOURCE = ("rtmp://", "rtsp://", "http://", "https://")
@@ -220,16 +223,16 @@ def create_dataloader(
     Args:
         data_cfg (DataConfig): Data-specific configuration (batch size, source, etc.).
         dataset_cfg (DatasetConfig): Dataset-specific configuration (classes, paths).
-        task (str, optional): The current task ('detect' or 'segment').
-            Defaults to "detect".
-        split (str, optional): The dataset split to use (e.g., 'train', 'validation').
+        task (TrainerTaskType, optional): The current task.
+            Defaults to TrainerTaskType.DETECTION.
+        split (DataSplitType, optional): The dataset split to use (e.g., TRAIN, VAL).
             Defaults to None.
 
     Returns:
         Union[StreamDataLoader, DataLoader]: The requested data loader instance.
     """
 
-    if task == TrainerTaskType.INFERENCE:
+    if task == TaskMode.INFERENCE:
         return StreamDataLoader(data_cfg)
 
     if split is None:
@@ -239,7 +242,7 @@ def create_dataloader(
         prepare_dataset(dataset_cfg, split)
 
     # 1. Dataset Factory: Select the appropriate class from registry
-    dataset_key = f"{task}_{dataset_cfg.type}"
+    dataset_key = (task, dataset_cfg.type)
     dataset_class = DATASETS.get(dataset_key)
 
     if dataset_class is None:

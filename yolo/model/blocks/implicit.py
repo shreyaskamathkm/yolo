@@ -1,5 +1,3 @@
-# TODO Phase 2: update imports — Conv from yolo.model.blocks.basic,
-#               RepNCSPELAN from yolo.model.blocks.backbone
 from typing import Any, Dict, Optional
 
 import torch
@@ -11,8 +9,10 @@ from yolo.model.blocks.backbone import RepNCSPELAN
 # Phase 2: replace with: from yolo.model.blocks.basic import Conv
 # Phase 2: replace with: from yolo.model.blocks.backbone import RepNCSPELAN
 from yolo.model.blocks.basic import Conv
+from yolo.registry import BLOCKS
 
 
+@BLOCKS.register_module()
 class Anchor2Vec(nn.Module):
     def __init__(self, reg_max: int = 16) -> None:
         super().__init__()
@@ -27,6 +27,7 @@ class Anchor2Vec(nn.Module):
         return anchor_x, vector_x
 
 
+@BLOCKS.register_module()
 class ImplicitA(nn.Module):
     """
     Implement YOLOR - implicit knowledge(Add), paper: https://arxiv.org/abs/2105.04206
@@ -45,6 +46,7 @@ class ImplicitA(nn.Module):
         return self.implicit + x
 
 
+@BLOCKS.register_module()
 class ImplicitM(nn.Module):
     """
     Implement YOLOR - implicit knowledge(multiply), paper: https://arxiv.org/abs/2105.04206
@@ -63,6 +65,7 @@ class ImplicitM(nn.Module):
         return self.implicit * x
 
 
+@BLOCKS.register_module()
 class DConv(nn.Module):
     def __init__(self, in_channels=512, alpha=0.8, atoms=512):
         super().__init__()
@@ -86,6 +89,7 @@ class DConv(nn.Module):
         return self.alpha * x + (1 - self.alpha) * r
 
 
+@BLOCKS.register_module()
 class RepNCSPELAND(RepNCSPELAN):
     def __init__(self, *args, atoms: 512, rd_args={}, **kwargs):
         super().__init__(*args, **kwargs)

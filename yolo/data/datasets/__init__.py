@@ -1,9 +1,6 @@
-from yolo.utils.registry import Registry
-
-DATASETS = Registry("datasets")
-
 from yolo.data.datasets.coco import COCODetectionDataset, COCOSegmentationDataset
 from yolo.data.datasets.yolo import YOLODetectionDataset, YOLOSegmentationDataset
+from yolo.registry import DATASETS
 
 __all__ = [
     "DATASETS",

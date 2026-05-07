@@ -1,3 +1,4 @@
+import logging
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any, List, Tuple
@@ -9,13 +10,15 @@ from torch import Tensor
 from yolo.data.annotations import create_image_metadata, scale_segmentation
 from yolo.data.base.detect import DetectionDataset
 from yolo.data.base.segment import SegmentationDataset
-from yolo.data.datasets import DATASETS
-from yolo.utils.logger import logger
+from yolo.data.schema import TrainerTaskType
+from yolo.registry import DATASETS
+
+logger = logging.getLogger(__name__)
 
 MAX_WORKERS = 1
 
 
-@DATASETS.register_module(name="detect_coco")
+@DATASETS.register_module(name=(TrainerTaskType.DETECTION, "coco"))
 class COCODetectionDataset(DetectionDataset):
     """Dataset for COCO-format detection labels (.json)."""
 
@@ -90,7 +93,7 @@ class COCODetectionDataset(DetectionDataset):
         return sorted(data, key=lambda x: x[2], reverse=True)
 
 
-@DATASETS.register_module(name="segment_coco")
+@DATASETS.register_module(name=(TrainerTaskType.SEGMENTATION, "coco"))
 class COCOSegmentationDataset(SegmentationDataset):
     """Dataset for COCO-format segmentation labels (.json)."""
 

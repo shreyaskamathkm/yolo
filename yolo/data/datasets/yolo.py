@@ -8,10 +8,11 @@ from torch import Tensor
 
 from yolo.data.base.detect import DetectionDataset
 from yolo.data.base.segment import SegmentationDataset
-from yolo.data.datasets import DATASETS
+from yolo.data.schema import TrainerTaskType
+from yolo.registry import DATASETS
 
 
-@DATASETS.register_module(name="detect_yolo")
+@DATASETS.register_module(name=(TrainerTaskType.DETECTION, "yolo"))
 class YOLODetectionDataset(DetectionDataset):
     """Dataset for YOLO-format detection labels (.txt)."""
 
@@ -41,7 +42,7 @@ class YOLODetectionDataset(DetectionDataset):
         return data
 
 
-@DATASETS.register_module(name="segment_yolo")
+@DATASETS.register_module(name=(TrainerTaskType.SEGMENTATION, "yolo"))
 class YOLOSegmentationDataset(SegmentationDataset):
     """Dataset for YOLO-format segmentation labels (.txt)."""
 
