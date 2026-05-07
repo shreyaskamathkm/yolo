@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path
 
 import torch
@@ -6,7 +7,8 @@ from torch import Tensor
 
 from yolo.config.config import Config
 from yolo.model.builder import create_model
-from yolo.utils.logger import logger
+
+logger = logging.getLogger(__name__)
 
 
 class TorchBackend(nn.Module):

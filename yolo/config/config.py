@@ -36,11 +36,6 @@ from yolo.config.schemas.training import (
 )
 from yolo.schema import TrainerTaskType
 
-# Registering the enum class directly allows OmegaConf to handle type casting automatically.
-# This means you can write @task_type=trainer.TRAIN in your config YAML, and OmegaConf
-# will correctly instantiate TrainerTaskType.TRAIN without needing a lambda resolver.
-OmegaConf.register_new_resolver("task_type", TrainerTaskType, replace=True)
-
 
 @dataclass
 class Config:

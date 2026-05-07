@@ -1,3 +1,4 @@
+import logging
 from typing import Any, Dict, List, Optional, Tuple
 
 import torch
@@ -6,7 +7,8 @@ from torch.nn.common_types import _size_2_t
 
 from yolo.model.blocks.basic import Conv, Pool
 from yolo.registry import BLOCKS
-from yolo.utils.logger import logger
+
+logger = logging.getLogger(__name__)
 from yolo.utils.module_utils import create_activation_function
 
 

@@ -1,3 +1,4 @@
+import logging
 import os
 from pathlib import Path
 from typing import List, Optional, Union
@@ -12,7 +13,8 @@ from yolo.config.config import (
     NMSConfig,
 )
 from yolo.tasks.detection.postprocess import Anc2Box, Vec2Box, bbox_nms, transform_bbox
-from yolo.utils.logger import logger
+
+logger = logging.getLogger(__name__)
 
 
 def initialize_distributed() -> None:

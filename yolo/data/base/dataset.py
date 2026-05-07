@@ -1,3 +1,4 @@
+import logging
 from abc import ABC, abstractmethod
 from pathlib import Path
 from statistics import mean
@@ -22,7 +23,8 @@ from yolo.data.augmentation import (
 )
 from yolo.data.schema import Sample
 from yolo.utils.distributed import rank_zero_first
-from yolo.utils.logger import logger
+
+logger = logging.getLogger(__name__)
 
 
 class BaseDataset(Dataset, ABC):

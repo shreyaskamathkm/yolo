@@ -1,3 +1,4 @@
+import logging
 from collections import OrderedDict
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
@@ -10,7 +11,8 @@ from yolo.config.config import ModelConfig, YOLOLayer
 from yolo.data.preparation import prepare_weight
 from yolo.model import blocks
 from yolo.registry import BLOCKS
-from yolo.utils.logger import logger
+
+logger = logging.getLogger(__name__)
 
 
 class YOLO(nn.Module):

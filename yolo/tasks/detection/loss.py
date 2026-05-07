@@ -1,3 +1,4 @@
+import logging
 from typing import Any, Dict, List, Tuple
 
 import torch
@@ -6,10 +7,11 @@ from torch import Tensor, nn
 from torch.nn import BCEWithLogitsLoss
 
 from yolo.config.config import Config, LossConfig
-from yolo.schema import TrainerTaskType
 from yolo.registry import LOSSES
+from yolo.schema import TrainerTaskType
 from yolo.tasks.detection.postprocess import BoxMatcher, Vec2Box, calculate_iou
-from yolo.utils.logger import logger
+
+logger = logging.getLogger(__name__)
 
 
 class BCELoss(nn.Module):

@@ -1,3 +1,4 @@
+import logging
 import threading
 from pathlib import Path
 from queue import Empty, Full, Queue
@@ -19,7 +20,8 @@ from yolo.data.datasets import DATASETS
 from yolo.data.preparation import prepare_dataset
 from yolo.data.schema import Batch, Sample
 from yolo.schema import DataSplitType, TaskMode, TrainerTaskType
-from yolo.utils.logger import logger
+
+logger = logging.getLogger(__name__)
 
 _STREAM_DONE = object()
 _STREAM_SOURCE = ("rtmp://", "rtsp://", "http://", "https://")

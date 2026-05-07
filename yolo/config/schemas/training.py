@@ -36,6 +36,7 @@ class TrainerConfig:
     gradient_clip_val: float = 10.0
     gradient_clip_algorithm: str = "norm"
     deterministic: bool = True
+    fast_dev_run: Union[bool, int] = False
 
 
 @dataclass

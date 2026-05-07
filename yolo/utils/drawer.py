@@ -1,3 +1,4 @@
+import logging
 import random
 from typing import List, Optional, Union
 
@@ -8,7 +9,8 @@ from torchvision.transforms.functional import to_pil_image
 
 from yolo.config.config import ModelConfig
 from yolo.model.builder import YOLO
-from yolo.utils.logger import logger
+
+logger = logging.getLogger(__name__)
 
 
 def get_color(idx: int):

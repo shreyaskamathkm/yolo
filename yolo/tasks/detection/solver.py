@@ -11,10 +11,10 @@ from torchmetrics.detection import MeanAveragePrecision
 
 from yolo.config.config import Config
 from yolo.data.loader import create_dataloader
-from yolo.schema import DataSplitType, TaskMode, TrainerTaskType
 from yolo.deploy import create_inference_backend
 from yolo.model.builder import create_model
 from yolo.registry import SOLVERS
+from yolo.schema import DataSplitType, TaskMode, TrainerTaskType
 from yolo.tasks.detection.loss import create_loss_function
 from yolo.tasks.detection.postprocess import create_converter, to_metrics_format
 from yolo.training.optim import create_optimizer, create_scheduler
@@ -155,7 +155,7 @@ class DetectionTrainModel(DetectionValidateModel):
             loss, loss_item = self.loss_fn(aux_predicts, main_predicts, targets)
         else:
             loss, loss_item = self.loss_fn(main_predicts, targets)
-            
+
         self.log_dict(
             loss_item,
             logger=True,

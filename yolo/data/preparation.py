@@ -1,3 +1,4 @@
+import logging
 import zipfile
 from pathlib import Path
 from typing import Optional
@@ -6,7 +7,8 @@ import requests
 from rich.progress import BarColumn, Progress, TextColumn, TimeRemainingColumn
 
 from yolo.config.config import DatasetConfig
-from yolo.utils.logger import logger
+
+logger = logging.getLogger(__name__)
 
 
 def download_file(url, destination: Path):

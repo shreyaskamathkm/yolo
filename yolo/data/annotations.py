@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 from itertools import chain
 from pathlib import Path
@@ -8,7 +9,8 @@ import numpy as np
 import torch
 
 from yolo.utils.format_converters import discretize_categories
-from yolo.utils.logger import logger
+
+logger = logging.getLogger(__name__)
 
 
 def locate_label_paths(dataset_path: Path, phase_path: str) -> Tuple[Path, Path]:

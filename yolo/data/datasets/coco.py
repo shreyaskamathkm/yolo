@@ -1,3 +1,4 @@
+import logging
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any, List, Tuple
@@ -11,7 +12,8 @@ from yolo.data.base.detect import DetectionDataset
 from yolo.data.base.segment import SegmentationDataset
 from yolo.data.schema import TrainerTaskType
 from yolo.registry import DATASETS
-from yolo.utils.logger import logger
+
+logger = logging.getLogger(__name__)
 
 MAX_WORKERS = 1
 
