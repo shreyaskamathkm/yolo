@@ -145,7 +145,7 @@ bump-major:
 
 # ── CI ───────────────────────────────────────────────────────────────────────
 
-test-all: lint test
+test-all: lint test docs
 	@echo "--- All checks passed ---"
 
 ci: setup lint test
