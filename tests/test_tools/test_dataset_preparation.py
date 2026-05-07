@@ -22,5 +22,8 @@ def test_prepare_dataset(train_cfg: Config):
     assert "instances_train.json" in os.listdir(annotations_path)
 
 
-def test_prepare_weight():
-    prepare_weight()
+def test_prepare_weight(tmp_path):
+    # Use a real model name to avoid 404
+    weight_path = tmp_path / "v9-t.pt"
+    prepare_weight(weight_path=weight_path)
+    assert weight_path.exists()

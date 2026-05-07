@@ -1,30 +1,46 @@
 # Build Model
 
-In YOLOv7, predictions are `Anchor`-based. In YOLOv9, predictions are `Vector`-based. A converter transforms bounding boxes to the appropriate format.
+The model architecture is task-agnostic and configuration-driven. The system uses a registry-based approach to build models from YAML definitions or custom classes.
 
 ```mermaid
-flowchart LR
-Input-->Model;
-Model--Class-->NMS;
-Model--Anc/Vec-->Converter;
-Converter--Box-->NMS;
-NMS-->Output;
+flowchart TD
+    Config["YAML Config / Registry"] -- create_model --> Model
+    Input --> Model
+    subgraph Model [ConfigModel]
+        Backbone --> Neck
+        Neck --> Head["Task Head (Det/Seg/Cls)"]
+    end
+    Head --> Output["Raw Output"]
+    Output -- Post-Processing --> Final["Final Predictions"]
 ```
 
 ## Load Model
 
-Use `create_model` to automatically create the `YOLO` model and load weights.
+Use `create_model` to instantiate the model and load weights. This factory function handles registry lookup, weight downloading/loading, and optional `torch.compile` optimization.
 
 | Argument | Type | Description |
 |---|---|---|
-| `model` | `ModelConfig` | The model configuration |
-| `class_num` | `int` | Number of dataset classes, used for the prediction head |
-| `weight_path` | `Path \| bool` | `False` = no weights; `True`/`None` = default weights; `Path` = load from path |
+| `model_cfg` | `ModelConfig` | The model architecture configuration |
+| `weight_path` | `Path \| bool` | `False` = no weights; `True` = default weights (`weights/<name>.pt`); `Path` = load from path |
+| `class_num` | `int` | Number of dataset classes |
+| `weight_key` | `str` | Key in the weight dictionary to load from (default: `state_dict`) |
+| `strict` | `bool` | If `True`, fails if weights are not 100% matched |
 
 ```python
-model = create_model(cfg.model, class_num=cfg.dataset.class_num, weight_path=cfg.weight)
+from yolo.model.builder import create_model
+
+model = create_model(
+    cfg.model,
+    class_num=cfg.dataset.class_num,
+    weight_path=cfg.weight,
+    strict=True
+)
 model = model.to(device)
 ```
+
+## ConfigModel
+
+The default `ConfigModel` assembles layers sequentially based on the `model` section of the configuration. It automatically injects metadata like `num_classes` and `reg_max` into the layers that require them.
 
 ## Torch Compile
 
@@ -50,28 +66,9 @@ from yolo.deploy.factory import create_inference_backend
 backend = create_inference_backend(cfg.task.backend, cfg.weight, device, cfg)
 ```
 
-## Autoload Converter
+## Task-Specific Heads
 
-Autoloads the converter based on model type (`v7` → `Anc2Box`, `v9` → `Vec2Box`). The converter transforms raw model outputs into bounding boxes.
-
-| Argument | Description |
-|---|---|
-| `model_name` | Name of the model (selects `Vec2Box` or `Anc2Box`) |
-| `model` | The model instance used for auto-detecting the anchor grid |
-| `anchor_cfg` | Anchor configuration for generating the grid |
-| `image_size` | The input image resolution `[H, W]` |
-| `device` | Computing device |
-| `class_num` | Number of classes (required for `Anc2Box`) |
-
-```python
-from yolo.tasks.detection.postprocess import create_converter
-
-converter = create_converter(
-    cfg.model.name,
-    model,
-    cfg.model.anchor,
-    cfg.image_size,
-    device,
-    class_num=cfg.dataset.class_num
-)
-```
+The model supports various task-specific heads registered in the `BLOCKS` registry:
+- **Detection**: `MultiheadDetection`, `Detection`, `IDetection`
+- **Segmentation**: `MultiheadSegmentation`, `Segmentation`
+- **Classification**: `Classification`

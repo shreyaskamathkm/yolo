@@ -40,7 +40,7 @@ from torch.nn import ModuleList
 from typing_extensions import override
 
 from yolo.config.config import Config, YOLOLayer
-from yolo.model.builder import YOLO
+from yolo.model.builder import ConfigModel
 from yolo.utils.solver_utils import make_ap_table
 
 logger = logging.getLogger(__name__)
@@ -280,8 +280,8 @@ def build_loggers(cfg: Config):
     return loggers, save_path
 
 
-def log_model_structure(model: Union[ModuleList, YOLOLayer, YOLO]):
-    if isinstance(model, YOLO):
+def log_model_structure(model: Union[ModuleList, YOLOLayer, ConfigModel]):
+    if isinstance(model, ConfigModel):
         model = model.model
     console = Console()
     table = Table(title="Model Layers")

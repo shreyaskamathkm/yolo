@@ -4,12 +4,11 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 
 import torch
 from einops import rearrange
-from torch import Tensor, tensor
+from torch import Tensor, nn, tensor
 from torchmetrics.detection import MeanAveragePrecision
 from torchvision.ops import batched_nms
 
 from yolo.config.config import AnchorConfig, MatcherConfig, NMSConfig
-from yolo.model.builder import YOLO
 
 logger = logging.getLogger(__name__)
 
@@ -383,7 +382,7 @@ class Vec2Box:
     LTRB (Left-Top-Right-Bottom) offsets to absolute xyxy coordinates.
     """
 
-    def __init__(self, model: YOLO, anchor_cfg: AnchorConfig, image_size: List[int], device: torch.device):
+    def __init__(self, model: nn.Module, anchor_cfg: AnchorConfig, image_size: List[int], device: torch.device):
         """Initializes the Vec2Box converter.
 
         Args:
@@ -406,7 +405,7 @@ class Vec2Box:
         self.image_size = image_size
         self.anchor_grid, self.scaler = anchor_grid.to(device), scaler.to(device)
 
-    def create_auto_anchor(self, model: YOLO, image_size):
+    def create_auto_anchor(self, model: nn.Module, image_size):
         W, H = image_size
         # TODO: need accelerate dummy test
         device = next(model.parameters()).device
@@ -453,7 +452,7 @@ class Anc2Box:
     """
 
     def __init__(
-        self, model: YOLO, anchor_cfg: AnchorConfig, image_size: List[int], device: torch.device, class_num: int
+        self, model: nn.Module, anchor_cfg: AnchorConfig, image_size: List[int], device: torch.device, class_num: int
     ):
         """Initializes the Anc2Box converter.
 
@@ -480,7 +479,7 @@ class Anc2Box:
         self.anchor_num = self.anchor_scale.size(2)
         self.class_num = class_num
 
-    def create_auto_anchor(self, model: YOLO, image_size):
+    def create_auto_anchor(self, model: nn.Module, image_size):
         W, H = image_size
         dummy_input = torch.zeros(1, 3, H, W, device=self.device)
         dummy_output = model(dummy_input)

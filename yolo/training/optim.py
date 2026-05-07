@@ -1,11 +1,11 @@
 from typing import List, Optional, Type, Union
 
 import torch
+from torch import nn
 from torch.optim import Optimizer
 from torch.optim.lr_scheduler import _LRScheduler
 
 from yolo.config.config import OptimizerConfig, SchedulerConfig
-from yolo.model.builder import YOLO
 
 
 def lerp(start: float, end: float, step: Union[int, float], total: int = 1) -> float:
@@ -215,7 +215,7 @@ if hasattr(torch.serialization, "add_safe_globals"):
     torch.serialization.add_safe_globals([WarmupLRPolicy, LinearWarmupPolicy, YOLOWarmupPolicy, WarmupBatchScheduler])
 
 
-def create_optimizer(model: YOLO, optim_cfg: OptimizerConfig) -> Optimizer:
+def create_optimizer(model: nn.Module, optim_cfg: OptimizerConfig) -> Optimizer:
     """Factory function to build the optimizer.
 
     Separates model parameters into groups (bias, normalization, convolution)

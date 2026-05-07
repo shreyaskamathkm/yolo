@@ -42,6 +42,30 @@ def clean_state_dict(state_dict: dict) -> dict:
     return new_state_dict
 
 
+def align_state_dict(model_state: dict, loaded_state: dict) -> Tuple[dict, int]:
+    """
+    Match model_state keys with loaded_state keys using multiple prefix candidates.
+
+    Args:
+        model_state: The state dict of the target model.
+        loaded_state: The state dict loaded from a file.
+
+    Returns:
+        Tuple[dict, int]: (aligned_state_dict, matched_count)
+    """
+    aligned_state = model_state.copy()
+    matched_count = 0
+    for key in model_state.keys():
+        # Try different prefix variations common in YOLO/Lightning
+        candidates = [key, f"model.{key}", f"model.model.{key}"]
+        for cand in candidates:
+            if cand in loaded_state and model_state[key].shape == loaded_state[cand].shape:
+                aligned_state[key] = loaded_state[cand]
+                matched_count += 1
+                break
+    return aligned_state, matched_count
+
+
 def restore_compile_prefix(state_dict: dict, prefixes: Union[str, List[str]] = ["model.", "ema."]) -> dict:
     """
     Restore torch.compile prefixes to state_dict keys.

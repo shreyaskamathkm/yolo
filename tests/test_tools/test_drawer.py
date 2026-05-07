@@ -2,7 +2,7 @@ from PIL import Image
 from torch import tensor
 
 from yolo.config.config import Config
-from yolo.model.builder import YOLO
+from yolo.model.builder import ConfigModel
 from yolo.utils.drawer import draw_bboxes, draw_model
 
 
@@ -11,7 +11,7 @@ def test_draw_model_by_config(train_cfg: Config):
     draw_model(model_cfg=train_cfg.model)
 
 
-def test_draw_model_by_model(model: YOLO):
+def test_draw_model_by_model(model: ConfigModel):
     """Test the drawing of a YOLO model."""
     draw_model(model=model)
 
