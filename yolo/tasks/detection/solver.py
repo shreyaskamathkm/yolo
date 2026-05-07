@@ -215,7 +215,7 @@ class DetectionInferenceModel(BaseModel):
         super().__init__(cfg)
         self.cfg = cfg
         self.model = create_inference_backend(cfg.task.backend, self.cfg.weight, str(self.device), self.cfg)
-        self.predict_loader = create_dataloader(cfg.task.data, cfg.dataset, task=TrainerTaskType.INFERENCE)
+        self.predict_loader = create_dataloader(cfg.task.data, cfg.dataset, task=TaskMode.INFERENCE)
         self.last_time = time.time()
         self.video_writer = None
         self.current_video_path = None
