@@ -171,7 +171,7 @@ class RepNCSPELAN(nn.Module):
 class AConv(nn.Module):
     """Downsampling module combining average and max pooling with convolution for feature reduction."""
 
-    def __init__(self, in_channels: int, out_channels: int):
+    def __init__(self, in_channels: int, out_channels: int, **kwargs):
         super().__init__()
         mid_layer = {"kernel_size": 3, "stride": 2}
         self.avg_pool = Pool("avg", kernel_size=2, stride=1)
@@ -187,7 +187,7 @@ class AConv(nn.Module):
 class ADown(nn.Module):
     """Downsampling module combining average and max pooling with convolution for feature reduction."""
 
-    def __init__(self, in_channels: int, out_channels: int):
+    def __init__(self, in_channels: int, out_channels: int, **kwargs):
         super().__init__()
         half_in_channels = in_channels // 2
         half_out_channels = out_channels // 2

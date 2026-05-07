@@ -47,7 +47,7 @@ class Pool(nn.Module):
 
 @BLOCKS.register_module()
 class Concat(nn.Module):
-    def __init__(self, dim=1):
+    def __init__(self, dim=1, **kwargs):
         super(Concat, self).__init__()
         self.dim = dim
 

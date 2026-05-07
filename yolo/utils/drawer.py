@@ -1,5 +1,6 @@
 import logging
 import random
+from pathlib import Path
 from typing import List, Optional, Union
 
 import numpy as np
@@ -8,7 +9,7 @@ from PIL import Image, ImageDraw, ImageFont
 from torchvision.transforms.functional import to_pil_image
 
 from yolo.config.config import ModelConfig
-from yolo.model.builder import YOLO
+from yolo.model.builder import ConfigModel
 
 logger = logging.getLogger(__name__)
 
@@ -156,13 +157,16 @@ def draw_masks(
     return combined.convert("RGB")
 
 
-def draw_model(*, model_cfg: ModelConfig = None, model: YOLO = None, v7_base=False):
+def draw_model(
+    *, model_cfg: ModelConfig = None, model: ConfigModel = None, v7_base=False, save_dir: Union[str, Path] = "output"
+):
     """Generates a graphviz visualization of the model architecture.
 
     Args:
         model_cfg (Optional[ModelConfig]): Configuration to build a model from.
         model (Optional[YOLO]): An existing YOLO model instance.
         v7_base (bool): Whether to simplify the graph using YOLOv7-specific patterns.
+        save_dir (str | Path): Directory to save the output diagram.
 
     Note:
         Requires the `graphviz` library and system backend.
@@ -216,8 +220,13 @@ def draw_model(*, model_cfg: ModelConfig = None, model: YOLO = None, v7_base=Fal
         for jdx in range(idx, model_size):
             if model_mat[idx, jdx]:
                 dot.edge(str(idx), str(jdx))
+
+    save_path = Path(save_dir)
+    save_path.mkdir(parents=True, exist_ok=True)
+    full_path = save_path / "Model-arch"
+
     try:
-        dot.render("Model-arch", format="png", cleanup=True)
-        logger.info(":artist_palette: Drawing Model Architecture at Model-arch.png")
+        dot.render(str(full_path), format="png", cleanup=True)
+        logger.info(f":artist_palette: Drawing Model Architecture at {full_path}.png")
     except:
         logger.warning(":warning: Could not find graphviz backend, continue without drawing the model architecture")

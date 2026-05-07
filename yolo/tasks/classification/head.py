@@ -3,12 +3,14 @@ from typing import Tuple
 from torch import Tensor, nn
 
 from yolo.model.blocks.basic import Conv
+from yolo.registry import BLOCKS
 
 
+@BLOCKS.register_module()
 class Classification(nn.Module):
-    def __init__(self, in_channel: int, num_classes: int, *, neck_channels=1024, **head_args):
+    def __init__(self, in_channels: int, num_classes: int, *, neck_channels=1024, **head_args):
         super().__init__()
-        self.conv = Conv(in_channel, neck_channels, 1)
+        self.conv = Conv(in_channels, neck_channels, 1)
         self.pool = nn.AdaptiveAvgPool2d(1)
         self.head = nn.Linear(neck_channels, num_classes)
 

@@ -10,7 +10,7 @@ from yolo import Anc2Box, Config, Vec2Box, create_converter, create_model
 from yolo.data.loader import StreamDataLoader, create_dataloader
 from yolo.data.preparation import prepare_dataset
 from yolo.data.schema import DataSplitType, TrainerTaskType
-from yolo.model.builder import YOLO
+from yolo.model.builder import ConfigModel
 from yolo.utils.logging_utils import build_loggers
 from yolo.utils.runner_utils import build_callbacks, set_seed
 
@@ -53,13 +53,13 @@ def device():
 
 
 @pytest.fixture(scope="session")
-def model(train_cfg: Config, device) -> YOLO:
+def model(train_cfg: Config, device) -> ConfigModel:
     model = create_model(train_cfg.model)
     return model.to(device)
 
 
 @pytest.fixture(scope="session")
-def model_v7(inference_v7_cfg: Config, device) -> YOLO:
+def model_v7(inference_v7_cfg: Config, device) -> ConfigModel:
     model = create_model(inference_v7_cfg.model)
     return model.to(device)
 
@@ -85,7 +85,7 @@ def solver(train_cfg: Config) -> Trainer:
 
 
 @pytest.fixture(scope="session")
-def vec2box(train_cfg: Config, model: YOLO, device) -> Vec2Box:
+def vec2box(train_cfg: Config, model: ConfigModel, device) -> Vec2Box:
     return create_converter(
         train_cfg.model.name,
         model,
@@ -97,7 +97,7 @@ def vec2box(train_cfg: Config, model: YOLO, device) -> Vec2Box:
 
 
 @pytest.fixture(scope="session")
-def anc2box(inference_v7_cfg: Config, model: YOLO, device) -> Anc2Box:
+def anc2box(inference_v7_cfg: Config, model: ConfigModel, device) -> Anc2Box:
     return create_converter(
         inference_v7_cfg.model.name,
         model,

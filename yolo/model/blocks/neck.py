@@ -27,7 +27,9 @@ class CBLinear(nn.Module):
 @BLOCKS.register_module()
 class SPPCSPConv(nn.Module):
     # CSP https://github.com/WongKinYiu/CrossStagePartialNetworks
-    def __init__(self, in_channels: int, out_channels: int, expand: float = 0.5, kernel_sizes: Tuple[int] = (5, 9, 13)):
+    def __init__(
+        self, in_channels: int, out_channels: int, expand: float = 0.5, kernel_sizes: Tuple[int] = (5, 9, 13), **kwargs
+    ):
         super().__init__()
         neck_channels = int(2 * out_channels * expand)
         self.pre_conv = nn.Sequential(
@@ -55,7 +57,7 @@ class SPPCSPConv(nn.Module):
 class SPPELAN(nn.Module):
     """SPPELAN module comprising multiple pooling and convolution layers."""
 
-    def __init__(self, in_channels: int, out_channels: int, neck_channels: Optional[int] = None):
+    def __init__(self, in_channels: int, out_channels: int, neck_channels: Optional[int] = None, **kwargs):
         super(SPPELAN, self).__init__()
         neck_channels = neck_channels or out_channels // 2
 
@@ -72,7 +74,7 @@ class SPPELAN(nn.Module):
 
 @BLOCKS.register_module()
 class CBFuse(nn.Module):
-    def __init__(self, index: List[int], mode: str = "nearest"):
+    def __init__(self, index: List[int], mode: str = "nearest", **kwargs):
         super().__init__()
         self.idx = index
         self.mode = mode

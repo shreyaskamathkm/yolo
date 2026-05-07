@@ -6,7 +6,7 @@ from torch.utils.data import DataLoader
 
 from yolo.config.config import Config
 from yolo.data.loader import StreamDataLoader
-from yolo.model.builder import YOLO
+from yolo.model.builder import ConfigModel
 from yolo.tasks.detection.postprocess import Anc2Box, Vec2Box
 from yolo.tasks.detection.solver import DetectionInferenceModel as InferenceModel
 from yolo.tasks.detection.solver import DetectionTrainModel as TrainModel
@@ -20,7 +20,7 @@ def model_validator(validation_cfg: Config):
 
 
 def test_model_validator_initialization(solver: Trainer, model_validator: ValidateModel):
-    assert isinstance(model_validator.model, YOLO)
+    assert isinstance(model_validator.model, ConfigModel)
     assert hasattr(solver, "validate")
 
 
@@ -74,7 +74,7 @@ def model_trainer(train_cfg: Config):
 
 
 def test_model_trainer_initialization(solver: Trainer, model_trainer: TrainModel):
-    assert isinstance(model_trainer.model, YOLO)
+    assert isinstance(model_trainer.model, ConfigModel)
     assert hasattr(solver, "fit")
     assert solver.optimizers is not None
 

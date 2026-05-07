@@ -4,7 +4,7 @@ from hydra import compose, initialize
 from omegaconf import OmegaConf
 
 from yolo.config.config import Config
-from yolo.model.builder import YOLO, create_model
+from yolo.model.builder import ConfigModel, create_model
 
 config_path = ".."
 config_name = "test"
@@ -13,30 +13,27 @@ config_name = "test"
 def test_build_model_v9c():
     with initialize(config_path=config_path, version_base=None):
         cfg: Config = compose(config_name=config_name, overrides=["model=v9-c"])
-
         OmegaConf.set_struct(cfg.model, False)
-        cfg.weight = None
-        model = YOLO(cfg.model)
+        model = create_model(cfg.model, weight_path=True, strict=True)
+        assert isinstance(model, ConfigModel)
         assert len(model.model) == 39
 
 
 def test_build_model_v9m():
     with initialize(config_path=config_path, version_base=None):
-        cfg: Config = compose(config_name=config_name, overrides=[f"model=v9-m"])
-
+        cfg: Config = compose(config_name=config_name, overrides=["model=v9-m"])
         OmegaConf.set_struct(cfg.model, False)
-        cfg.weight = None
-        model = YOLO(cfg.model)
+        model = create_model(cfg.model, weight_path=True, strict=True)
+        assert isinstance(model, ConfigModel)
         assert len(model.model) == 39
 
 
 def test_build_model_v7():
     with initialize(config_path=config_path, version_base=None):
-        cfg: Config = compose(config_name=config_name, overrides=[f"model=v7"])
-
+        cfg: Config = compose(config_name=config_name, overrides=["model=v7"])
         OmegaConf.set_struct(cfg.model, False)
-        cfg.weight = None
-        model = YOLO(cfg.model)
+        model = create_model(cfg.model, weight_path=True, strict=True)
+        assert isinstance(model, ConfigModel)
         assert len(model.model) == 106
 
 
@@ -56,7 +53,7 @@ def model(cfg: Config):
 
 
 def test_model_basic_status(model):
-    assert isinstance(model, YOLO)
+    assert isinstance(model, ConfigModel)
     assert len(model.model) == 39
 
 
