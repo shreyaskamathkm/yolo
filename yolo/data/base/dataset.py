@@ -12,9 +12,8 @@ from torch.utils.data import Dataset
 
 from yolo.config.config import DataConfig, DatasetConfig
 from yolo.data.augmentation import Compose
-from yolo.data.schema import Sample
+from yolo.data.schema import Sample, TrainerTaskType
 from yolo.utils.distributed import rank_zero_first
-from yolo.data.schema import TrainerTaskType
 
 logger = logging.getLogger(__name__)
 
