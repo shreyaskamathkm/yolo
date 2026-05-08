@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 class BaseModule(LightningModule):
     """Base LightningModule for YOLO tasks.
-    
+
     Handles model initialization, state_dict cleaning for torch.compile,
     and shared optimizer/scheduler configuration.
     """
