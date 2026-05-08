@@ -1,13 +1,16 @@
 from __future__ import annotations
 
 import abc
-from typing import List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 import torch
+from omegaconf import DictConfig, ListConfig, OmegaConf
 from PIL import Image
 from torch import Tensor
 from torchvision.transforms import functional as TF
+
+from yolo.registry import TRANSFORMS
 
 
 class BaseTransform(abc.ABC):
@@ -83,6 +86,7 @@ class BaseTransform(abc.ABC):
         return bool((xs.max() - xs.min()) > 0 and (ys.max() - ys.min()) > 0)
 
 
+@TRANSFORMS.register_module()
 class RemoveOutliers(BaseTransform):
     """Removes bounding boxes that are smaller than a specified minimum area.
 
@@ -107,6 +111,7 @@ class RemoveOutliers(BaseTransform):
         return image, boxes, masks
 
 
+@TRANSFORMS.register_module()
 class PadAndResize(BaseTransform):
     """Letterbox-resizes the image to a target size while maintaining aspect ratio.
 
@@ -158,6 +163,7 @@ class PadAndResize(BaseTransform):
         return padded_image, boxes, masks, transform_info
 
 
+@TRANSFORMS.register_module()
 class HorizontalFlip(BaseTransform):
     """Randomly flips the image, bounding boxes, and masks horizontally.
 
@@ -187,6 +193,7 @@ class HorizontalFlip(BaseTransform):
         return image, boxes, masks
 
 
+@TRANSFORMS.register_module()
 class VerticalFlip(BaseTransform):
     """Randomly flips the image, bounding boxes, and masks vertically.
 
@@ -216,6 +223,7 @@ class VerticalFlip(BaseTransform):
         return image, boxes, masks
 
 
+@TRANSFORMS.register_module()
 class Mosaic(BaseTransform):
     """Combines four images into a single 2x2 grid (Mosaic augmentation).
 
@@ -312,6 +320,7 @@ class Mosaic(BaseTransform):
         return mosaic_image, final_boxes, (all_masks if all_masks else None)
 
 
+@TRANSFORMS.register_module()
 class MixUp(BaseTransform):
     """Blends two images using a Beta-distributed mixing coefficient.
 
@@ -388,6 +397,7 @@ class MixUp(BaseTransform):
         return mixed_img, merged_boxes, (merged_masks if merged_masks else None)
 
 
+@TRANSFORMS.register_module()
 class RandomCrop(BaseTransform):
     """Randomly crops the image to a smaller size.
 
@@ -428,3 +438,68 @@ class RandomCrop(BaseTransform):
             boxes, masks = self._filter_boxes_and_masks(boxes, masks)
 
         return image, boxes, masks
+
+
+@TRANSFORMS.register_module()
+class Compose(BaseTransform):
+    """Composes several transforms together and applies final resizing/tensor conversion.
+
+    Args:
+        transforms: List of dictionaries or BaseTransform objects.
+        image_size: Target (width, height) for the final PadAndResize.
+    """
+
+    def __init__(
+        self,
+        transforms: List[Dict[str, Any]],
+        image_size: Tuple[int, int] = (640, 640),
+    ):
+        self.image_size = image_size
+        self.base_size = int(sum(image_size) / len(image_size))
+
+        self.transforms = []
+        for transform_cfg in transforms:
+            if isinstance(transform_cfg, (DictConfig, ListConfig)):
+                cfg = OmegaConf.to_container(transform_cfg, resolve=True)
+            elif isinstance(transform_cfg, dict):
+                cfg = transform_cfg.copy()
+            else:
+                raise TypeError(f"Expected dict or OmegaConf config, got {type(transform_cfg)}")
+
+            t_type = cfg.pop("type")
+            transform_cls = TRANSFORMS.get(t_type)
+            if transform_cls is None:
+                raise ValueError(f"Transform '{t_type}' not found in registry.")
+            self.transforms.append(transform_cls(**cfg))
+
+        self.pad_resize = PadAndResize(image_size)
+
+        # Propagate self as parent for transforms that need it
+        for transform in self.transforms:
+            if hasattr(transform, "set_parent"):
+                transform.set_parent(self)
+
+    def set_parent(self, parent):
+        """Allow nesting if necessary, though root Compose usually acts as parent."""
+        for transform in self.transforms:
+            if hasattr(transform, "set_parent"):
+                transform.set_parent(parent)
+        return self
+
+    def __call__(
+        self,
+        image: Image.Image,
+        boxes: Tensor,
+        masks: Optional[List[Tensor]] = None,
+    ) -> Tuple[Tensor, Tensor, Optional[List[Tensor]], Tensor]:
+        """
+        Returns:
+            Tuple of (processed_image_tensor, boxes, masks, transformation_info).
+        """
+        for transform in self.transforms:
+            image, boxes, masks = transform(image, boxes, masks)
+
+        # Final padding/resize returns (image, boxes, masks, transform_info)
+        image, boxes, masks, rev_tensor = self.pad_resize(image, boxes, masks)
+        image = TF.to_tensor(image)
+        return image, boxes, masks, rev_tensor

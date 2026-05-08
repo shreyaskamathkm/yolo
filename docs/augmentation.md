@@ -13,9 +13,9 @@ All augmentation classes inherit from `BaseTransform`. This base class provides:
 - Helper methods for cloning tensors to prevent in-place mutation of dataset caches.
 - Utility functions for filtering degenerate boxes (zero-area) and valid masks.
 
-### `AugmentationComposer`
+### `Compose`
 
-The `AugmentationComposer` is responsible for chaining multiple transforms together. It also handles:
+The `Compose` is responsible for chaining multiple transforms together. It is initialized via a list of configuration dictionaries. It also handles:
 - Injecting the "parent" sampler into multi-image transforms like `Mosaic` and `MixUp`.
 - Applying a final `PadAndResize` operation to ensure images match the target input size.
 - Converting the final PIL image to a PyTorch tensor.
@@ -34,7 +34,7 @@ The `AugmentationComposer` is responsible for chaining multiple transforms toget
 Transforms like `Mosaic` and `MixUp` require additional samples from the dataset. This is handled via a **sampler injection** pattern:
 
 1. The `BaseDataset` provides a `get_more_data(n)` method.
-2. This method is attached to the `AugmentationComposer`.
+2. This method is attached to the `Compose`.
 3. The composer injects itself as a `parent` into the transforms.
 4. The transforms call `self.parent.get_more_data(n)` at runtime.
 

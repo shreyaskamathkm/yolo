@@ -11,9 +11,9 @@ All augmentation classes inherit from `BaseTransform`. This ensures a consistent
 - **No Mutation**: Tensors are cloned before modification to prevent dataset cache corruption.
 - **Filtering**: Automatic pruning of degenerate boxes (zero-area) and collapsed polygons.
 
-### `AugmentationComposer`
+### `Compose`
 
-The `AugmentationComposer` chains multiple transforms. It also handles the injection of the dataset sampler for multi-image transforms like `Mosaic` and `MixUp`.
+The `Compose` chains multiple transforms. It is initialized via a list of configurations and handles the injection of the dataset sampler for multi-image transforms like `Mosaic` and `MixUp`.
 
 ## Built-in Transforms
 
@@ -29,7 +29,7 @@ The `AugmentationComposer` chains multiple transforms. It also handles the injec
 
 ## Multi-Image Sampling
 
-| Transforms like `Mosaic` and `MixUp` need additional data. This is handled via the `set_parent` mechanism. The `AugmentationComposer` automatically links the transforms to the dataset's sampling method.
+| Transforms like `Mosaic` and `MixUp` need additional data. This is handled via the `set_parent` mechanism. The `Compose` automatically links the transforms to the dataset's sampling method.
 
 ## Writing a Custom Transform
 

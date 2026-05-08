@@ -11,17 +11,8 @@ from torch import Tensor
 from torch.utils.data import Dataset
 
 from yolo.config.config import DataConfig, DatasetConfig
-from yolo.data.augmentation import (
-    AugmentationComposer,
-    HorizontalFlip,
-    MixUp,
-    Mosaic,
-    PadAndResize,
-    RandomCrop,
-    RemoveOutliers,
-    VerticalFlip,
-)
-from yolo.data.schema import Sample
+from yolo.data.augmentation import Compose
+from yolo.data.schema import Sample, TrainerTaskType
 from yolo.utils.distributed import rank_zero_first
 
 logger = logging.getLogger(__name__)
@@ -48,11 +39,9 @@ class BaseDataset(Dataset, ABC):
         self.image_size = data_cfg.image_size
         self.batch_size = data_cfg.batch_size
         self.dynamic_shape = getattr(data_cfg, "dynamic_shape", False)
-        self.base_size = mean(self.image_size)
+        self.base_size = int(mean(self.image_size))
 
-        augment_cfg = data_cfg.data_augment
-        transforms = [eval(aug)(prob) for aug, prob in augment_cfg.items()]
-        self.transform = AugmentationComposer(transforms, tuple(self.image_size), self.base_size)
+        self.transform = Compose(data_cfg.data_augment, tuple(self.image_size))
         self.transform.get_more_data = self.get_more_data
 
         # Robust path handling: if path doesn't exist, try relative to project root
@@ -119,14 +108,14 @@ class BaseDataset(Dataset, ABC):
             img, _ = self.get_image(idx.item())
             labels = self.get_labels(idx.item())
             # Detection labels are bboxes [N, 5], Segmentation labels are polygons [List[Tensor]]
-            if self.task == "detect":
+            if self.task == TrainerTaskType.DETECTION:
                 results.append((img, labels, None))
-            elif self.task == "segment":
+            elif self.task == TrainerTaskType.SEGMENTATION:
                 # For segmentation, we need to derive bboxes for transforms that use them (like Mosaic)
                 bboxes = []
                 for poly in labels:
                     cls = poly[0]
-                    pts = poly[1:].reshape(-1, 2)
+                    pts = torch.as_tensor(poly[1:]).reshape(-1, 2)
                     bboxes.append([cls, pts[:, 0].min(), pts[:, 1].min(), pts[:, 0].max(), pts[:, 1].max()])
                 bboxes = torch.tensor(bboxes).reshape(-1, 5)
                 results.append((img, bboxes, labels))

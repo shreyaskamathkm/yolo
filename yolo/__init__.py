@@ -13,7 +13,7 @@ if rank_zero_only.rank == 0 and not logger.hasHandlers():
     logger.addHandler(RichHandler(show_path=True, show_time=False, markup=True))
 
 from yolo.config.config import Config, NMSConfig
-from yolo.data.loader import AugmentationComposer, create_dataloader
+from yolo.data.loader import Compose, create_dataloader
 from yolo.deploy import ModelExporter, create_inference_backend
 from yolo.model.builder import create_model
 from yolo.tasks.detection.postprocess import (
@@ -43,7 +43,7 @@ __all__ = [
     "Anc2Box",
     "bbox_nms",
     "create_converter",
-    "AugmentationComposer",
+    "Compose",
     "ImageLogger",
     "create_dataloader",
     "create_inference_backend",

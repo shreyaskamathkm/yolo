@@ -35,7 +35,7 @@ class DataConfig:
     pin_memory: bool
     dataloader_workers: int
     image_size: List[int]
-    data_augment: Dict[str, int]
+    data_augment: List[Dict[str, Any]]
     source: Optional[Union[str, int]] = None
     dynamic_shape: Optional[bool] = False
     equivalent_batch_size: Optional[int] = 64
