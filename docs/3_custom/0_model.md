@@ -38,6 +38,7 @@ See `yolo/config/model/v9-c.yaml` for a complete example.
    - `backbone.py` — repeatable backbone blocks (Bottleneck, ELAN, RepNCSP, …)
    - `neck.py` — feature pyramid / neck blocks (SPPELAN, CBFuse, …)
    - `implicit.py` — implicit knowledge / anchor blocks
+   - `head.py` — prediction heads (Detection, IDetection, TOODHead)
 
 3. Reference it in a model YAML:
 

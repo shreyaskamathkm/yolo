@@ -375,6 +375,66 @@ class BoxMatcher:
         return anchor_matched_targets, valid_mask
 
 
+class TaskAlignedMatcher(BoxMatcher):
+    """Task Aligned Assigner for TOOD.
+
+    Matches each target to the most suitable anchor based on the
+    alignment metric: t = s^alpha * u^beta.
+    """
+
+    def __init__(self, cfg: MatcherConfig, class_num: int, vec2box: Any, reg_max: int) -> None:
+        super().__init__(cfg, class_num, vec2box, reg_max)
+        self.alpha = getattr(cfg, "alpha", 1.0)
+        self.beta = getattr(cfg, "beta", 6.0)
+
+    def __call__(self, target: Tensor, predict: Tuple[Tensor]) -> Tuple[Tensor, Tensor]:
+        predict_cls, predict_bbox = predict
+        n_targets = target.shape[1]
+        if n_targets == 0:
+            device = predict_bbox.device
+            align_cls = torch.zeros_like(predict_cls, device=device)
+            align_bbox = torch.zeros_like(predict_bbox, device=device)
+            valid_mask = torch.zeros(predict_cls.shape[:2], dtype=bool, device=device)
+            anchor_matched_targets = torch.cat([align_cls, align_bbox], dim=-1)
+            return anchor_matched_targets, valid_mask
+
+        target_cls, target_bbox = target.split([1, 4], dim=-1)
+        target_cls = target_cls.long().clamp(0)
+
+        grid_mask = self.get_valid_matrix(target_bbox)
+        iou_mat = self.get_iou_matrix(predict_bbox, target_bbox)
+        cls_mat = self.get_cls_matrix(predict_cls.sigmoid(), target_cls)
+
+        # TOOD alignment metric: t = s^alpha * u^beta
+        target_matrix = (cls_mat**self.alpha) * (iou_mat**self.beta)
+
+        # choose topk
+        topk_targets, topk_mask = self.filter_topk(target_matrix, grid_mask, topk=self.topk)
+
+        # match best anchor to valid targets without valid anchors
+        topk_mask = self.ensure_one_anchor(target_matrix, topk_mask)
+
+        # delete one anchor pred assign to mutliple gts
+        unique_indices, valid_mask, topk_mask = self.filter_duplicates(iou_mat, topk_mask)
+
+        align_bbox = torch.gather(target_bbox, 1, unique_indices.repeat(1, 1, 4))
+        align_cls_indices = torch.gather(target_cls, 1, unique_indices)
+        align_cls = torch.zeros_like(align_cls_indices, dtype=torch.bool).repeat(1, 1, self.class_num)
+        align_cls.scatter_(-1, index=align_cls_indices, src=~align_cls)
+
+        # normalize class distribution to match max iou
+        iou_mat *= topk_mask
+        target_matrix *= topk_mask
+        max_target = target_matrix.amax(dim=-1, keepdim=True)
+        max_iou = iou_mat.amax(dim=-1, keepdim=True)
+        normalize_term = (target_matrix / (max_target + 1e-9)) * max_iou
+        normalize_term = normalize_term.permute(0, 2, 1).gather(2, unique_indices)
+        align_cls = align_cls * normalize_term * valid_mask[:, :, None]
+
+        anchor_matched_targets = torch.cat([align_cls, align_bbox], dim=-1)
+        return anchor_matched_targets, valid_mask
+
+
 class Vec2Box:
     """Converts vector-based model predictions (YOLOv9) into bounding boxes.
 

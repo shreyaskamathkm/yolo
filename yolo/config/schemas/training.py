@@ -44,6 +44,8 @@ class LossConfig:
     objective: Dict[str, int]
     aux: Union[bool, float]
     matcher: MatcherConfig
+    type: str = "YOLO"
+    gamma: float = 1.0
 
 
 @dataclass

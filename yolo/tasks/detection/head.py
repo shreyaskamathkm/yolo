@@ -113,6 +113,8 @@ class MultiheadDetection(nn.Module):
 
         if head_kwargs.pop("version", None) == "v7":
             DetectionHead = IDetection
+        elif head_kwargs.pop("version", None) == "tood":
+            DetectionHead = TOODHead
 
         self.heads = nn.ModuleList(
             [DetectionHead((in_channels[0], in_channel), num_classes, **head_kwargs) for in_channel in in_channels]
@@ -120,3 +122,46 @@ class MultiheadDetection(nn.Module):
 
     def forward(self, x_list: List[torch.Tensor]) -> List[torch.Tensor]:
         return [head(x) for x, head in zip(x_list, self.heads)]
+
+
+@BLOCKS.register_module()
+class TOODHead(nn.Module):
+    """Task-aligned One-stage Object Detection (TOOD) head.
+
+    Uses shared convolutions and a task-aligned predictor to balance
+    task-interactive and task-specific features.
+    """
+
+    def __init__(self, in_channels: Tuple[int], num_classes: int, *, reg_max: int = 16, num_convs: int = 6):
+        super().__init__()
+
+        if isinstance(in_channels, tuple):
+            in_channels = in_channels[1]
+
+        self.num_classes = num_classes
+        self.reg_max = reg_max
+
+        # Shared task-interactive convolutions
+        self.inter_convs = nn.ModuleList()
+        for i in range(num_convs):
+            self.inter_convs.append(Conv(in_channels if i == 0 else 256, 256, 3))
+
+        # Task-aligned predictor branches
+        self.cls_conv = nn.Conv2d(256, num_classes, 3, padding=1)
+        self.reg_conv = nn.Conv2d(256, 4 * reg_max, 3, padding=1)
+
+        self.anc2vec = Anchor2Vec(reg_max=reg_max)
+
+        # Init weights
+        self.cls_conv.bias.data.fill_(-10)
+        self.reg_conv.bias.data.fill_(1.0)
+
+    def forward(self, x):
+        for conv in self.inter_convs:
+            x = conv(x)
+
+        cls_score = self.cls_conv(x)
+        reg_dist = self.reg_conv(x)
+
+        anchor_x, vector_x = self.anc2vec(reg_dist)
+        return cls_score, anchor_x, vector_x

@@ -130,12 +130,46 @@ class YOLOLoss:
         return loss_iou, loss_dfl, loss_cls
 
 
+class TaskAlignedFocalLoss(nn.Module):
+    def __init__(self, gamma: float = 1.0) -> None:
+        super().__init__()
+        self.gamma = gamma
+        self.bce = nn.BCEWithLogitsLoss(reduction="none")
+
+    def forward(self, predicts_cls: Tensor, targets_cls: Tensor, cls_norm: Tensor) -> Any:
+        # Task Aligned Focal Loss: |t - s|^gamma * BCE(s, t)
+        s = predicts_cls.sigmoid()
+        weight = torch.abs(targets_cls - s) ** self.gamma
+        loss = self.bce(predicts_cls, targets_cls) * weight
+        return loss.sum() / cls_norm
+
+
+class TOODLoss(YOLOLoss):
+    """Task-aligned One-stage Object Detection (TOOD) loss.
+
+    Uses TaskAlignedMatcher and TaskAlignedFocalLoss for alignment.
+    """
+
+    def __init__(self, loss_cfg: LossConfig, vec2box: Vec2Box, class_num: int = 80, reg_max: int = 16) -> None:
+        super().__init__(loss_cfg, vec2box, class_num, reg_max)
+        from yolo.tasks.detection.postprocess import TaskAlignedMatcher
+
+        self.cls = TaskAlignedFocalLoss(gamma=getattr(loss_cfg, "gamma", 1.0))
+        self.matcher = TaskAlignedMatcher(loss_cfg.matcher, self.class_num, vec2box, reg_max)
+
+
 class BaseLoss:
     """Base class for detection losses."""
 
     def __init__(self, cfg: Config, vec2box: Any) -> None:
         loss_cfg = cfg.task.loss
-        self.loss = YOLOLoss(loss_cfg, vec2box, class_num=cfg.dataset.class_num, reg_max=cfg.model.anchor.reg_max)
+        loss_type = getattr(loss_cfg, "type", "YOLO").upper()
+        if loss_type == "TOOD":
+            loss_cls = TOODLoss
+        else:
+            loss_cls = YOLOLoss
+
+        self.loss = loss_cls(loss_cfg, vec2box, class_num=cfg.dataset.class_num, reg_max=cfg.model.anchor.reg_max)
         self.iou_rate = loss_cfg.objective["BoxLoss"]
         self.dfl_rate = loss_cfg.objective["DFLoss"]
         self.cls_rate = loss_cfg.objective["BCELoss"]
