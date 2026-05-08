@@ -1,55 +1,28 @@
+import logging
 import time
-from math import ceil
 from pathlib import Path
 
 import cv2
 import filetype
 import numpy as np
-from lightning import LightningModule
-from omegaconf import OmegaConf
 from torchmetrics.detection import MeanAveragePrecision
 
 from yolo.config.config import Config
 from yolo.data.loader import create_dataloader
 from yolo.deploy import create_inference_backend
-from yolo.model.builder import create_model
 from yolo.registry import SOLVERS
 from yolo.schema import DataSplitType, TaskMode, TrainerTaskType
+from yolo.tasks.base import BaseModule
 from yolo.tasks.detection.loss import create_loss_function
 from yolo.tasks.detection.postprocess import create_converter, to_metrics_format
-from yolo.training.optim import create_optimizer, create_scheduler
 from yolo.utils.drawer import draw_bboxes
 from yolo.utils.model_utils import PostProcess
-from yolo.utils.module_utils import (
-    clean_state_dict,
-    restore_compile_prefix,
-    unwrap_model,
-)
 
-
-class BaseModel(LightningModule):
-    def __init__(self, cfg: Config):
-        super().__init__()
-        self.model = create_model(cfg.model, class_num=cfg.dataset.class_num, weight_path=cfg.weight)
-        self.save_hyperparameters(OmegaConf.to_container(cfg, resolve=True))
-
-    def forward(self, x):
-        return self.model(x)
-
-    def on_save_checkpoint(self, checkpoint: dict) -> None:
-        """Strip torch.compile prefixes from state_dict when saving."""
-        checkpoint["state_dict"] = clean_state_dict(checkpoint["state_dict"])
-
-    def on_load_checkpoint(self, checkpoint: dict) -> None:
-        """Add _orig_mod prefix to state_dict when loading if model is compiled."""
-        if hasattr(self.model, "_orig_mod"):
-            checkpoint["state_dict"] = restore_compile_prefix(checkpoint["state_dict"])
-        else:
-            checkpoint["state_dict"] = clean_state_dict(checkpoint["state_dict"])
+logger = logging.getLogger(__name__)
 
 
 @SOLVERS.register_module(name=(TrainerTaskType.DETECTION, TaskMode.VAL))
-class DetectionValidateModel(BaseModel):
+class DetectionValidateModel(BaseModule):
     """LightningModule for YOLO detection validation.
 
     Handles metric calculation (mAP), data loading for validation,
@@ -73,6 +46,7 @@ class DetectionValidateModel(BaseModel):
         )
 
     def setup(self, stage):
+        logger.debug(f"Setting up Validation Model for stage: {stage}")
         self.vec2box = create_converter(
             self.cfg.model.name, self.model, self.cfg.model.anchor, self.cfg.image_size, self.device
         )
@@ -138,6 +112,7 @@ class DetectionTrainModel(DetectionValidateModel):
 
     def setup(self, stage):
         super().setup(stage)
+        logger.debug("Initializing loss function")
         self.loss_fn = create_loss_function(self.cfg, self.vec2box)
 
     def train_dataloader(self):
@@ -166,39 +141,9 @@ class DetectionTrainModel(DetectionValidateModel):
         )
         return loss
 
-    def configure_optimizers(self):
-        optimizer = create_optimizer(self.model, self.cfg.task.optimizer)
-
-        batch_size = self.cfg.task.data.batch_size
-        world_size = getattr(self.trainer, "world_size", 1) if self.trainer else 1
-        equivalent_batch_size = getattr(self.cfg.task.data, "equivalent_batch_size", None)
-        if equivalent_batch_size is not None:
-            max_accum = max(1, round(equivalent_batch_size / (batch_size * world_size)))
-        else:
-            max_accum = 1
-
-        # Use dataset length — invariant to loader sharding (e.g. Ray Train or Distributed Sampler
-        # wraps the loader per rank, so len(train_loader) would be the per-rank count).
-        if hasattr(self.train_loader, "dataset"):
-            n_samples = len(self.train_loader.dataset)
-            global_batch = batch_size * world_size * max_accum
-            drop_last = getattr(self.cfg.task.data, "drop_last", False)
-            if drop_last:
-                steps_per_epoch = max(1, n_samples // global_batch)
-            else:
-                steps_per_epoch = max(1, ceil(n_samples / global_batch))
-        else:
-            steps_per_epoch = max(1, ceil(len(self.train_loader) / max_accum))
-
-        # Fix: ensure steps_per_epoch is at least 1
-        steps_per_epoch = max(1, steps_per_epoch)
-
-        scheduler = create_scheduler(optimizer, self.cfg.task.scheduler, steps_per_epoch, self.cfg.task.epoch)
-        return {"optimizer": optimizer, "lr_scheduler": {"scheduler": scheduler, "interval": "step"}}
-
 
 @SOLVERS.register_module(name=(TrainerTaskType.DETECTION, TaskMode.INFERENCE))
-class DetectionInferenceModel(BaseModel):
+class DetectionInferenceModel(BaseModule):
     """LightningModule for YOLO detection inference.
 
     Handles high-performance inference using various backends, real-time
@@ -254,7 +199,7 @@ class DetectionInferenceModel(BaseModel):
         if self.video_writer is not None:
             self.video_writer.release()
             self.video_writer = None
-            print("🎥 Video saved successfully.")
+            logger.info("🎥 Video saved successfully.")
 
     def _display_stream(self, img):
         curr_time = time.time()
@@ -269,7 +214,7 @@ class DetectionInferenceModel(BaseModel):
                 save_name = f"{path.name}"
                 save_path = Path(self.trainer.default_root_dir) / save_name
                 img.save(save_path)
-                print(f"💾 Saved visualize image at {save_path}")
+                logger.info(f"💾 Saved visualize image at {save_path}")
             elif filetype.is_video(path):
                 # Process as a video frame
                 self._write_video_frame(img, path)
@@ -281,7 +226,7 @@ class DetectionInferenceModel(BaseModel):
                 save_name = f"frame{batch_idx:03d}.png"
                 save_path = Path(self.trainer.default_root_dir) / save_name
                 img.save(save_path)
-                print(f"💾 Saved visualize image at {save_path}")
+                logger.info(f"💾 Saved visualize image at {save_path}")
 
     def _write_video_frame(self, img, path):
         if path != self.current_video_path and self.video_writer is not None:
@@ -301,6 +246,6 @@ class DetectionInferenceModel(BaseModel):
                 fps = 30
             fourcc = cv2.VideoWriter_fourcc(*"mp4v")
             self.video_writer = cv2.VideoWriter(save_path, fourcc, fps, (w, h))
-            print(f"🎥 Initialized video writer: {save_path} ({w}x{h} @ {fps} FPS)")
+            logger.info(f"🎥 Initialized video writer: {save_path} ({w}x{h} @ {fps} FPS)")
 
         self.video_writer.write(img_bgr)

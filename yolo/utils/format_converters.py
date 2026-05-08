@@ -1,9 +1,12 @@
 # Merged from: tools/format_converters.py + tools/data_conversion.py
 import json
+import logging
 from pathlib import Path
 from typing import Dict, List, Optional
 
 from rich.progress import track
+
+logger = logging.getLogger(__name__)
 
 # ─── Weight conversion helpers ──────────────────────────────────────────────
 
@@ -130,7 +133,7 @@ def convert_weight_seg(old_state_dict, new_state_dict):
             new_weight_name not in new_state_dict.keys()
             or new_state_dict[new_weight_name].shape != old_state_dict[old_weight_name].shape
         ):
-            print(f"new: {new_weight_name}, old: {old_weight_name}")
+            logger.info(f"new: {new_weight_name}, old: {old_weight_name}")
         new_state_dict[new_weight_name] = old_state_dict[old_weight_name]
     return new_state_dict
 

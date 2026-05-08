@@ -73,14 +73,14 @@ class StreamDataLoader:
             self.queue: Queue = Queue(maxsize=8)
             self._stream_thread = Thread(target=self._stream_worker, daemon=True)
             self._stream_thread.start()
-            print(f"✅ Streaming from: {self.source}")
+            logger.info(f"✅ Streaming from: {self.source}")
         else:
             self.source = Path(source_str)
             self.total_frames = self._count_folder_or_file_frames(self.source)
             self.queue = Queue(maxsize=32)
             self._load_thread = Thread(target=self.load_source, daemon=True)
             self._load_thread.start()
-            print(f"✅ Loading from: {self.source} ({self.total_frames} frames found)")
+            logger.info(f"✅ Loading from: {self.source} ({self.total_frames} frames found)")
 
     def _count_stream_frames(self, source_str: str) -> int:
         """Count frames for a stream source. Only opens a file once."""
