@@ -9,7 +9,7 @@ from torch.nn import BCEWithLogitsLoss
 from yolo.config.config import Config, LossConfig
 from yolo.registry import LOSSES
 from yolo.schema import TrainerTaskType
-from yolo.tasks.detection.postprocess import BoxMatcher, Vec2Box, calculate_iou
+from yolo.tasks.detection.postprocess import BoxMatcher, TaskAlignedMatcher, Vec2Box, calculate_iou
 
 logger = logging.getLogger(__name__)
 
@@ -152,7 +152,6 @@ class TOODLoss(YOLOLoss):
 
     def __init__(self, loss_cfg: LossConfig, vec2box: Vec2Box, class_num: int = 80, reg_max: int = 16) -> None:
         super().__init__(loss_cfg, vec2box, class_num, reg_max)
-        from yolo.tasks.detection.postprocess import TaskAlignedMatcher
 
         self.cls = TaskAlignedFocalLoss(gamma=getattr(loss_cfg, "gamma", 1.0))
         self.matcher = TaskAlignedMatcher(loss_cfg.matcher, self.class_num, vec2box, reg_max)

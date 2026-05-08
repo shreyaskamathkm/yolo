@@ -33,18 +33,20 @@ optimizer:
     nesterov: true
 
 loss:
+  type: YOLO
+  gamma: 1.0
   objective:
     BCELoss: 0.5
     BoxLoss: 7.5
     DFLoss: 1.5
-  aux:
-    0.25
+  aux: 0.25
   matcher:
     iou: CIoU
     topk: 10
     factor:
       iou: 6.0
       cls: 0.5
+
 
 scheduler:
   type: LinearLR

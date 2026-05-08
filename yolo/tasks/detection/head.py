@@ -111,9 +111,10 @@ class MultiheadDetection(nn.Module):
         super().__init__()
         DetectionHead = Detection
 
-        if head_kwargs.pop("version", None) == "v7":
+        version = head_kwargs.pop("version", None)
+        if version == "v7":
             DetectionHead = IDetection
-        elif head_kwargs.pop("version", None) == "tood":
+        elif version == "tood":
             DetectionHead = TOODHead
 
         self.heads = nn.ModuleList(
