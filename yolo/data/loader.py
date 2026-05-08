@@ -14,7 +14,7 @@ from torch import Tensor
 from torch.utils.data import DataLoader
 
 from yolo.config.config import DataConfig, DatasetConfig
-from yolo.data.augmentation import AugmentationComposer
+from yolo.data.augmentation import Compose
 from yolo.data.collate import collate_fn
 from yolo.data.datasets import DATASETS
 from yolo.data.preparation import prepare_dataset
@@ -62,7 +62,7 @@ class StreamDataLoader:
         else:
             self.path = self.source
 
-        self.transform = AugmentationComposer([], data_cfg.image_size)
+        self.transform = Compose([], data_cfg.image_size)
         self.stop_event = Event()
 
         if self.is_stream:

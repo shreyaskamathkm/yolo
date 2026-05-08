@@ -11,16 +11,7 @@ from torch import Tensor
 from torch.utils.data import Dataset
 
 from yolo.config.config import DataConfig, DatasetConfig
-from yolo.data.augmentation import (
-    AugmentationComposer,
-    HorizontalFlip,
-    MixUp,
-    Mosaic,
-    PadAndResize,
-    RandomCrop,
-    RemoveOutliers,
-    VerticalFlip,
-)
+from yolo.data.augmentation import Compose
 from yolo.data.schema import Sample
 from yolo.utils.distributed import rank_zero_first
 
@@ -48,11 +39,9 @@ class BaseDataset(Dataset, ABC):
         self.image_size = data_cfg.image_size
         self.batch_size = data_cfg.batch_size
         self.dynamic_shape = getattr(data_cfg, "dynamic_shape", False)
-        self.base_size = mean(self.image_size)
+        self.base_size = int(mean(self.image_size))
 
-        augment_cfg = data_cfg.data_augment
-        transforms = [eval(aug)(prob) for aug, prob in augment_cfg.items()]
-        self.transform = AugmentationComposer(transforms, tuple(self.image_size), self.base_size)
+        self.transform = Compose(data_cfg.data_augment, tuple(self.image_size))
         self.transform.get_more_data = self.get_more_data
 
         # Robust path handling: if path doesn't exist, try relative to project root

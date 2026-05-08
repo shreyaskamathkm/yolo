@@ -6,7 +6,7 @@ data:
   dataloader_workers: 4
   shuffle: False
   pin_memory: True
-  data_augment: {}
+  data_augment: []
   dynamic_shape: False
   drop_last: False
   redo_cache: False

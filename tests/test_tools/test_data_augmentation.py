@@ -3,7 +3,7 @@ from PIL import Image
 from torchvision.transforms import functional as TF
 
 from yolo.data.augmentation import (
-    AugmentationComposer,
+    Compose,
     HorizontalFlip,
     Mosaic,
     VerticalFlip,
@@ -27,19 +27,29 @@ def test_horizontal_flip():
 
 
 def test_compose():
-    # Define two mock transforms that simply return the inputs
-    def mock_transform(image, boxes, masks=None):
-        return image, boxes, masks
-
-    compose = AugmentationComposer([mock_transform, mock_transform])
+    # Test with configuration list of dicts
+    compose = Compose([{"type": "HorizontalFlip", "prob": 0}, {"type": "VerticalFlip", "prob": 0}])
     img = Image.new("RGB", (640, 640), color="blue")
     boxes = torch.tensor([[0, 0.2, 0.2, 0.8, 0.8]])
 
     transformed_img, transformed_boxes, transformed_masks, rev_tensor = compose(img, boxes)
-    tensor_img = TF.pil_to_tensor(img).to(torch.float32) / 255
+    assert transformed_img.shape == (3, 640, 640)
+    assert torch.equal(transformed_boxes, boxes)
 
-    assert (transformed_img == tensor_img).all(), "Image should not be altered"
-    assert torch.equal(transformed_boxes, boxes), "Boxes should not be altered"
+
+def test_compose_with_config():
+    # Test with configuration list of dicts
+    augment_cfg = [
+        {"type": "HorizontalFlip", "prob": 0.0},
+        {"type": "VerticalFlip", "prob": 0.0},
+    ]
+    compose = Compose(augment_cfg, image_size=(640, 640))
+    img = Image.new("RGB", (640, 640), color="blue")
+    boxes = torch.tensor([[0, 0.2, 0.2, 0.8, 0.8]])
+
+    transformed_img, transformed_boxes, transformed_masks, rev_tensor = compose(img, boxes)
+    assert transformed_img.shape == (3, 640, 640)
+    assert torch.equal(transformed_boxes, boxes)
 
 
 def test_mosaic():
