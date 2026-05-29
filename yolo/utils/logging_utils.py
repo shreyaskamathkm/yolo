@@ -1,6 +1,6 @@
 """
 Module for initializing logging tools used in machine learning and data processing.
-Supports integration with Weights & Biases (wandb), Loguru, TensorBoard, and other
+Supports integration with Weights & Biases (wandb), TensorBoard, and other
 logging frameworks as needed.
 
 This setup ensures consistent logging across various platforms, facilitating
